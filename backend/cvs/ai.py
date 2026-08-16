@@ -20,6 +20,7 @@ You are writing a professional summary for a CV that will be submitted for a uni
 - Emphasize academic background, relevant experience, and clear intent/motivation in a way that supports a credible study/visa narrative (continuity between past experience and field of study, career stability where evident from role seniority, genuine purpose)
 - Avoid exaggerated claims, superlatives, or anything that could read as inconsistent under scrutiny
 - Be 3-5 sentences, formal and professional in tone
+- Write in the standard CV/resume convention: implied first-person, with no pronouns and no restating the candidate's name. Do NOT write sentences like "[Name] is a..." or "He/She has...". Instead, start directly with the descriptor — for example: "Full-stack developer and business leader with hands-on experience building...". The candidate's name and identity are already shown elsewhere on the CV; the summary itself should read the way the candidate would describe their own background in a resume, not the way a biography or third-person profile would.
 
 Write in a natural, human tone — the way a real person would describe their own background, not the way an AI assistant writes:
 - Vary sentence length and structure; avoid formulaic patterns
