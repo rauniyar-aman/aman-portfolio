@@ -12,6 +12,7 @@ from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 
 DEFAULT_THEME_COLOR = "#1F4E37"
+DEFAULT_PHONE_COUNTRY_CODE = "+977"
 
 
 def _rgb(hex_color: str) -> RGBColor:
@@ -40,6 +41,10 @@ def build_cv_view_model(cv) -> dict:
     full_name = content.get("full_name", "")
     email = content.get("email", "")
     phone = content.get("phone", "")
+    phone_country_code = content.get("phone_country_code") or (
+        DEFAULT_PHONE_COUNTRY_CODE if phone else ""
+    )
+    phone_display = f"{phone_country_code} {phone}".strip() if phone else ""
     summary = content.get("summary", "")
     dob = content.get("dob", "")
     nationality = content.get("nationality", "")
@@ -122,7 +127,7 @@ def build_cv_view_model(cv) -> dict:
         "theme_color": theme_color,
         "full_name": full_name,
         "address": address,
-        "phone": phone,
+        "phone": phone_display,
         "email": email,
         "link_items": link_items,
         "summary": summary,

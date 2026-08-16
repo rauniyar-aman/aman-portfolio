@@ -7,6 +7,7 @@ import { apiPost, apiPut, ApiError } from "@/lib/api";
 import type { Address, CV, CVContent, EducationItem, ExperienceItem, Passport } from "@/lib/types";
 import { emptyAddress, emptyCVContent, emptyPassport, MARITAL_STATUS_OPTIONS } from "@/lib/types";
 import { COUNTRIES } from "@/lib/countries";
+import { COUNTRY_CODES, getCallingCodeForCountry } from "@/lib/countryCodes";
 import { NATIONALITIES } from "@/lib/nationalities";
 import DateInput from "@/components/DateInput";
 import LinksEditor from "@/components/LinksEditor";
@@ -116,6 +117,18 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
     setContent((prev) => ({
       ...prev,
       address: { ...(prev.address ?? emptyAddress()), [field]: value },
+    }));
+  }
+
+  // Defaults the phone country code to match the selected address country —
+  // still just a default, since a phone number's country and a mailing
+  // address's country don't have to be the same; the code field stays
+  // independently editable afterward.
+  function handleAddressCountryChange(country: string) {
+    setContent((prev) => ({
+      ...prev,
+      address: { ...(prev.address ?? emptyAddress()), country },
+      phone_country_code: getCallingCodeForCountry(country),
     }));
   }
 
@@ -309,12 +322,28 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
             />
           </Field>
           <Field label="Phone">
-            <input
-              type="text"
-              value={content.phone}
-              onChange={(e) => updateField("phone", e.target.value)}
-              className={inputClass}
-            />
+            <div className="flex items-center gap-2">
+              <select
+                value={content.phone_country_code}
+                onChange={(e) => updateField("phone_country_code", e.target.value)}
+                className={`${inputClass} w-24 shrink-0`}
+              >
+                {COUNTRY_CODES.map((code) => (
+                  <option key={code} value={code}>
+                    {code}
+                  </option>
+                ))}
+                {content.phone_country_code && !COUNTRY_CODES.includes(content.phone_country_code) && (
+                  <option value={content.phone_country_code}>{content.phone_country_code}</option>
+                )}
+              </select>
+              <input
+                type="text"
+                value={content.phone}
+                onChange={(e) => updateField("phone", e.target.value)}
+                className={inputClass}
+              />
+            </div>
           </Field>
         </div>
       </Section>
@@ -401,7 +430,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
           <Field label="Country">
             <select
               value={address.country}
-              onChange={(e) => updateAddress("country", e.target.value)}
+              onChange={(e) => handleAddressCountryChange(e.target.value)}
               className={inputClass}
             >
               {COUNTRIES.map((country) => (

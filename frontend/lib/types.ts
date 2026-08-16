@@ -1,6 +1,7 @@
 export const DEFAULT_THEME_COLOR = "#1F4E37";
 export const DEFAULT_NATIONALITY = "Nepalese";
 export const DEFAULT_COUNTRY = "Nepal";
+export const DEFAULT_PHONE_COUNTRY_CODE = "+977";
 export const MARITAL_STATUS_OPTIONS = ["Single", "Married"];
 
 export interface Passport {
@@ -36,6 +37,7 @@ export interface CVContent {
   full_name: string;
   email: string;
   phone: string;
+  phone_country_code: string;
   summary: string;
   dob: string;
   nationality: string;
@@ -73,6 +75,7 @@ export const emptyCVContent = (): CVContent => ({
   full_name: "",
   email: "",
   phone: "",
+  phone_country_code: DEFAULT_PHONE_COUNTRY_CODE,
   summary: "",
   dob: "",
   nationality: DEFAULT_NATIONALITY,
@@ -116,6 +119,10 @@ export function normalizeCVContent(raw: unknown): CVContent {
     nationality: typeof data.nationality === "string" && data.nationality ? data.nationality : DEFAULT_NATIONALITY,
     marital_status:
       typeof data.marital_status === "string" ? data.marital_status.trim() : base.marital_status,
+    phone_country_code:
+      typeof data.phone_country_code === "string" && data.phone_country_code
+        ? data.phone_country_code
+        : base.phone_country_code,
     passport: { ...emptyPassport(), ...((data.passport as Partial<Passport>) ?? {}) },
     address,
     skills,
