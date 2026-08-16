@@ -32,18 +32,18 @@ export default function SkillsInput({ skills, onChange }: SkillsInputProps) {
   }
 
   return (
-    <div className="rounded-md border border-gray-300 px-3 py-2">
+    <div className="rounded-md border border-border px-3 py-2">
       <div className="flex flex-wrap gap-2">
         {skills.map((skill) => (
           <span
             key={skill}
-            className="flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-700"
+            className="flex items-center gap-1 rounded-full bg-accent-soft px-2.5 py-1 text-xs text-foreground/80"
           >
             {skill}
             <button
               type="button"
               onClick={() => removeSkill(skill)}
-              className="text-gray-400 hover:text-gray-700"
+              className="text-muted hover:text-foreground/80"
               aria-label={`Remove ${skill}`}
             >
               ×

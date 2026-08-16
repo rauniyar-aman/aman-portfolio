@@ -67,13 +67,13 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <main className="mx-auto max-w-4xl px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-lg font-semibold text-gray-900">Your CVs</h1>
+          <h1 className="text-lg font-semibold text-foreground">Your CVs</h1>
           <Link
             href="/cv-maker/new"
-            className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90"
           >
             + New CV
           </Link>
@@ -81,34 +81,34 @@ export default function DashboardPage() {
 
         {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
-        {cvs === null && !error && <p className="text-sm text-gray-500">Loading…</p>}
+        {cvs === null && !error && <p className="text-sm text-muted">Loading…</p>}
 
         {cvs !== null && cvs.length === 0 && (
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted">
             You don&apos;t have any CVs yet. Create your first one to get started.
           </p>
         )}
 
         {cvs !== null && cvs.length > 0 && (
-          <ul className="divide-y divide-gray-200 rounded-lg border border-gray-200 bg-white">
+          <ul className="divide-y divide-border rounded-lg border border-border bg-white">
             {cvs.map((cv) => (
               <li key={cv.id} className="flex items-center justify-between gap-4 px-4 py-4">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-gray-900">{cv.title}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="truncate text-sm font-medium text-foreground">{cv.title}</p>
+                  <p className="text-xs text-muted">
                     Updated {new Date(cv.updated_at).toLocaleString()}
                   </p>
                 </div>
 
                 <div className="flex shrink-0 items-center gap-3 text-sm">
-                  <Link href={`/cv-maker/${cv.id}`} className="text-gray-600 hover:text-gray-900">
+                  <Link href={`/cv-maker/${cv.id}`} className="text-muted hover:text-foreground">
                     Edit
                   </Link>
                   <button
                     type="button"
                     onClick={() => handleExport(cv, "pdf")}
                     disabled={busyId === cv.id}
-                    className="text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                    className="text-muted hover:text-foreground disabled:opacity-50"
                   >
                     Export PDF
                   </button>
@@ -116,7 +116,7 @@ export default function DashboardPage() {
                     type="button"
                     onClick={() => handleExport(cv, "docx")}
                     disabled={busyId === cv.id}
-                    className="text-gray-600 hover:text-gray-900 disabled:opacity-50"
+                    className="text-muted hover:text-foreground disabled:opacity-50"
                   >
                     Export DOCX
                   </button>

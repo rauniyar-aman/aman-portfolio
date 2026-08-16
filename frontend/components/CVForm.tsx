@@ -23,7 +23,7 @@ function emptyEducation(): EducationItem {
 }
 
 const inputClass =
-  "w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none";
+  "w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none";
 
 export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVFormProps) {
   const router = useRouter();
@@ -171,7 +171,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
-        <label htmlFor="cv-title" className="mb-1 block text-sm font-medium text-gray-700">
+        <label htmlFor="cv-title" className="mb-1 block text-sm font-medium text-foreground/80">
           CV title
         </label>
         <input
@@ -181,7 +181,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g. Senior Backend Engineer Resume"
-          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+          className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none"
         />
       </div>
 
@@ -235,9 +235,9 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
       <Section title="Experience" action={<AddButton onClick={addExperience} label="Add experience" />}>
         <div className="space-y-6">
           {content.experience.map((item, index) => (
-            <div key={index} className="rounded-md border border-gray-200 p-4">
+            <div key={index} className="rounded-md border border-border p-4">
               <div className="mb-3 flex items-center justify-between">
-                <span className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                <span className="text-xs font-medium uppercase tracking-wide text-muted">
                   Experience {index + 1}
                 </span>
                 <button
@@ -306,7 +306,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
             </div>
           ))}
           {content.experience.length === 0 && (
-            <p className="text-sm text-gray-400">No experience added yet.</p>
+            <p className="text-sm text-muted">No experience added yet.</p>
           )}
         </div>
       </Section>
@@ -314,9 +314,9 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
       <Section title="Education" action={<AddButton onClick={addEducation} label="Add education" />}>
         <div className="space-y-4">
           {content.education.map((item, index) => (
-            <div key={index} className="rounded-md border border-gray-200 p-4">
+            <div key={index} className="rounded-md border border-border p-4">
               <div className="mb-3 flex items-center justify-between">
-                <span className="text-xs font-medium uppercase tracking-wide text-gray-400">
+                <span className="text-xs font-medium uppercase tracking-wide text-muted">
                   Education {index + 1}
                 </span>
                 <button
@@ -357,7 +357,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
             </div>
           ))}
           {content.education.length === 0 && (
-            <p className="text-sm text-gray-400">No education added yet.</p>
+            <p className="text-sm text-muted">No education added yet.</p>
           )}
         </div>
       </Section>
@@ -373,7 +373,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
         type="button"
         onClick={handleSave}
         disabled={saving || !title}
-        className="rounded-md bg-gray-900 px-5 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+        className="rounded-md bg-accent px-5 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
       >
         {saving ? "Saving…" : "Save"}
       </button>
@@ -393,7 +393,7 @@ function Section({
   return (
     <div className="mb-8">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+        <h2 className="text-sm font-semibold text-foreground">{title}</h2>
         {action}
       </div>
       {children}
@@ -413,7 +413,7 @@ function Field({
   return (
     <div className="mb-4">
       <div className="mb-1 flex items-center justify-between">
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
+        <label className="block text-sm font-medium text-foreground/80">{label}</label>
         {action}
       </div>
       {children}
@@ -426,7 +426,7 @@ function AddButton({ onClick, label }: { onClick: () => void; label: string }) {
     <button
       type="button"
       onClick={onClick}
-      className="text-sm font-medium text-gray-600 hover:text-gray-900"
+      className="text-sm font-medium text-muted hover:text-foreground"
     >
       + {label}
     </button>
@@ -448,7 +448,7 @@ function EnhanceButton({
       onClick={onClick}
       disabled={disabled || loading}
       title={disabled ? "Save the CV first to use AI enhance" : undefined}
-      className="text-xs font-medium text-indigo-600 hover:text-indigo-800 disabled:cursor-not-allowed disabled:text-gray-300"
+      className="text-xs font-medium text-accent hover:text-accent/80 disabled:cursor-not-allowed disabled:text-muted/50"
     >
       {loading ? "Enhancing…" : "✨ Enhance with AI"}
     </button>

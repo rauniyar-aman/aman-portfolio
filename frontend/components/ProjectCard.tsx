@@ -1,16 +1,17 @@
 import type { Project } from "@/lib/profile";
+import { GitHubIcon } from "@/components/icons";
 
 export default function ProjectCard({ project }: { project: Project }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-5">
-      <h3 className="text-sm font-semibold text-gray-900">{project.title}</h3>
-      <p className="mt-2 text-sm text-gray-600">{project.description}</p>
+    <div className="group rounded-xl border border-border bg-white p-6 transition-shadow hover:shadow-md">
+      <h3 className="text-base font-semibold text-foreground">{project.title}</h3>
+      <p className="mt-3 text-sm leading-relaxed text-muted">{project.description}</p>
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-5 flex flex-wrap gap-2">
         {project.tech.map((tech) => (
           <span
             key={tech}
-            className="rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-700"
+            className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent"
           >
             {tech}
           </span>
@@ -18,14 +19,15 @@ export default function ProjectCard({ project }: { project: Project }) {
       </div>
 
       {(project.githubUrl || project.liveUrl) && (
-        <div className="mt-4 flex gap-4 text-sm">
+        <div className="mt-5 flex gap-5 border-t border-border pt-4 text-sm">
           {project.githubUrl && (
             <a
               href={project.githubUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-gray-900 hover:underline"
+              className="flex items-center gap-1.5 font-medium text-foreground hover:text-accent"
             >
+              <GitHubIcon className="h-4 w-4" />
               GitHub
             </a>
           )}
@@ -34,9 +36,9 @@ export default function ProjectCard({ project }: { project: Project }) {
               href={project.liveUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-gray-900 hover:underline"
+              className="font-medium text-foreground hover:text-accent"
             >
-              Live demo
+              Live demo →
             </a>
           )}
         </div>

@@ -1,29 +1,34 @@
-import { profile } from "@/lib/profile";
+import PageHeader from "@/components/PageHeader";
+import { profile, social } from "@/lib/profile";
+import { SocialIcon, MailIcon } from "@/components/icons";
 
 export default function ContactPage() {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-16">
-      <h1 className="text-2xl font-semibold text-gray-900">Contact</h1>
-      <p className="mt-2 text-sm text-gray-600">
-        Feel free to reach out — I&apos;m happy to talk about work, projects, or anything else.
-      </p>
+    <main className="mx-auto max-w-3xl px-4 py-20">
+      <PageHeader
+        eyebrow="Contact"
+        title="Get in touch"
+        description="Feel free to reach out — I'm happy to talk about work, projects, or anything else."
+      />
 
-      <div className="mt-8 space-y-3">
+      <div className="max-w-sm space-y-3">
         <a
           href={`mailto:${profile.email}`}
-          className="block text-sm font-medium text-gray-900 hover:underline"
+          className="flex items-center gap-3 rounded-xl border border-border bg-white px-4 py-3.5 text-sm font-medium text-foreground transition-colors hover:border-accent hover:text-accent"
         >
+          <MailIcon className="h-5 w-5 shrink-0" />
           {profile.email}
         </a>
 
-        {profile.social.map((link) => (
+        {social.map((link) => (
           <a
             key={link.label}
             href={link.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="block text-sm font-medium text-gray-900 hover:underline"
+            className="flex items-center gap-3 rounded-xl border border-border bg-white px-4 py-3.5 text-sm font-medium text-foreground transition-colors hover:border-accent hover:text-accent"
           >
+            <SocialIcon icon={link.icon} className="h-5 w-5 shrink-0" />
             {link.label}
           </a>
         ))}

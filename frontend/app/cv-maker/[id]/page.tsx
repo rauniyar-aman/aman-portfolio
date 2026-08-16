@@ -34,10 +34,10 @@ export default function EditCVPage({ params }: { params: Promise<{ id: string }>
   }, [id, router]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {error && <p className="mx-auto max-w-3xl px-4 pt-6 text-sm text-red-600">{error}</p>}
       {!cv && !error && (
-        <p className="mx-auto max-w-3xl px-4 pt-6 text-sm text-gray-500">Loading…</p>
+        <p className="mx-auto max-w-3xl px-4 pt-6 text-sm text-muted">Loading…</p>
       )}
       {cv && <CVForm mode="edit" cvId={cv.id} initialTitle={cv.title} initialContent={cv.content} />}
     </div>
