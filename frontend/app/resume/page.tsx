@@ -14,7 +14,7 @@ export default function ResumePage() {
 
       <Link
         href="/cv-maker"
-        className="mt-8 inline-block rounded-md bg-accent px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-accent/90"
+        className="mt-8 inline-block rounded-full bg-accent px-6 py-3 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent/90"
       >
         Open CV Maker →
       </Link>

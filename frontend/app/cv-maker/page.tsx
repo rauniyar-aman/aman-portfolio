@@ -28,14 +28,14 @@ export default function CvMakerLandingPage() {
 
       <Link
         href="/cv-maker/login"
-        className="mt-8 inline-block rounded-md bg-accent px-6 py-2.5 text-sm font-medium text-white hover:bg-accent/90"
+        className="mt-8 inline-block rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent/90"
       >
         Log in
       </Link>
 
       <div className="mt-16 grid grid-cols-1 gap-4 text-left sm:grid-cols-3">
         {FEATURES.map((feature) => (
-          <div key={feature.title} className="rounded-lg border border-border bg-white p-5">
+          <div key={feature.title} className="rounded-lg border border-border bg-surface p-5">
             <h3 className="text-sm font-semibold text-foreground">{feature.title}</h3>
             <p className="mt-2 text-sm text-muted">{feature.description}</p>
           </div>

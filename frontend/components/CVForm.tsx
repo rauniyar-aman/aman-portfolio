@@ -23,7 +23,7 @@ function emptyEducation(): EducationItem {
 }
 
 const inputClass =
-  "w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none";
+  "w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-accent focus:outline-none";
 
 export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVFormProps) {
   const router = useRouter();
@@ -181,7 +181,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g. Senior Backend Engineer Resume"
-          className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-accent focus:outline-none"
+          className={inputClass}
         />
       </div>
 
@@ -373,7 +373,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
         type="button"
         onClick={handleSave}
         disabled={saving || !title}
-        className="rounded-md bg-accent px-5 py-2 text-sm font-medium text-white hover:bg-accent/90 disabled:opacity-50"
+        className="rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent/90 disabled:opacity-50"
       >
         {saving ? "Saving…" : "Save"}
       </button>

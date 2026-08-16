@@ -14,7 +14,6 @@ const NAV_LINKS = [
   { href: "/achievements", label: "Achievements" },
   { href: "/blog", label: "Blog" },
   { href: "/resume", label: "Resume" },
-  { href: "/contact", label: "Contact" },
   { href: "/cv-maker", label: "CV Maker" },
 ];
 
@@ -30,24 +29,36 @@ export default function NavMenu({ isAuthenticated }: { isAuthenticated: boolean 
   return (
     <>
       <div className="hidden items-center gap-1 lg:flex">
-        {NAV_LINKS.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-              isActive(pathname, link.href)
-                ? "text-accent"
-                : "text-foreground/70 hover:text-foreground"
-            }`}
-          >
-            {link.label}
-          </Link>
-        ))}
+        {NAV_LINKS.map((link) => {
+          const active = isActive(pathname, link.href);
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`relative px-3 py-2 text-sm font-medium transition-colors ${
+                active ? "text-foreground" : "text-muted hover:text-foreground"
+              }`}
+            >
+              {link.label}
+              {active && (
+                <span className="absolute inset-x-3 -bottom-[1px] h-[2px] rounded-full bg-accent" />
+              )}
+            </Link>
+          );
+        })}
+
         {isAuthenticated && (
           <div className="ml-2 border-l border-border pl-3">
             <LogoutButton />
           </div>
         )}
+
+        <Link
+          href="/contact"
+          className="ml-3 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent/90"
+        >
+          Contact Me
+        </Link>
       </div>
 
       <button
@@ -61,9 +72,9 @@ export default function NavMenu({ isAuthenticated }: { isAuthenticated: boolean 
       </button>
 
       {isOpen && (
-        <div className="absolute inset-x-0 top-full border-b border-border bg-background shadow-sm lg:hidden">
+        <div className="absolute inset-x-0 top-full border-b border-border bg-background shadow-lg lg:hidden">
           <div className="mx-auto flex max-w-5xl flex-col px-4 py-3">
-            {NAV_LINKS.map((link) => (
+            {[...NAV_LINKS, { href: "/contact", label: "Contact" }].map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

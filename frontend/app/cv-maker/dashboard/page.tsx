@@ -73,7 +73,7 @@ export default function DashboardPage() {
           <h1 className="text-lg font-semibold text-foreground">Your CVs</h1>
           <Link
             href="/cv-maker/new"
-            className="rounded-md bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent/90"
+            className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink hover:bg-accent/90"
           >
             + New CV
           </Link>
@@ -90,7 +90,7 @@ export default function DashboardPage() {
         )}
 
         {cvs !== null && cvs.length > 0 && (
-          <ul className="divide-y divide-border rounded-lg border border-border bg-white">
+          <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
             {cvs.map((cv) => (
               <li key={cv.id} className="flex items-center justify-between gap-4 px-4 py-4">
                 <div className="min-w-0">

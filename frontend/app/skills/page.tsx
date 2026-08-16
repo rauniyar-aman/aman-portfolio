@@ -12,7 +12,7 @@ export default function SkillsPage() {
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         {skills.map((group) => (
-          <div key={group.category} className="rounded-xl border border-border bg-white p-6">
+          <div key={group.category} className="rounded-xl border border-border bg-surface p-6">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-accent">
               {group.category}
             </h2>

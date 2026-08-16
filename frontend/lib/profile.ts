@@ -9,6 +9,7 @@ export const profile = {
   intro:
     "Building intelligent, production-grade web platforms while helping students navigate their path to studying abroad.",
   email: "amangupta00121212@gmail.com",
+  photo: "/aman.jpg",
 };
 
 export const bio = [

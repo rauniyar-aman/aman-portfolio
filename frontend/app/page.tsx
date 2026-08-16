@@ -1,11 +1,18 @@
 import Link from "next/link";
 import { profile, social } from "@/lib/profile";
 import { SocialIcon } from "@/components/icons";
+import Avatar from "@/components/Avatar";
 
 export default function HomePage() {
   return (
     <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-4xl flex-col justify-center px-4 py-20">
-      <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-border bg-accent-soft px-3 py-1 text-xs font-medium text-accent">
+      <Avatar
+        name={profile.name}
+        src={profile.photo}
+        className="h-24 w-24 border-2 border-border text-lg"
+      />
+
+      <span className="mt-6 inline-flex w-fit items-center gap-1.5 rounded-full border border-border bg-accent-soft px-3 py-1 text-xs font-medium text-accent">
         📍 {profile.location}
       </span>
 
@@ -24,13 +31,13 @@ export default function HomePage() {
       <div className="mt-10 flex flex-wrap items-center gap-4">
         <Link
           href="/projects"
-          className="rounded-md bg-accent px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-accent/90"
+          className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent/90"
         >
           View Projects
         </Link>
         <Link
           href="/contact"
-          className="rounded-md border border-border px-6 py-3 text-sm font-medium text-foreground transition-colors hover:border-accent hover:text-accent"
+          className="rounded-full border border-border px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:border-accent hover:text-accent"
         >
           Contact Me
         </Link>

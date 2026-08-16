@@ -3,7 +3,7 @@ import { GitHubIcon } from "@/components/icons";
 
 export default function ProjectCard({ project }: { project: Project }) {
   return (
-    <div className="group rounded-xl border border-border bg-white p-6 transition-shadow hover:shadow-md">
+    <div className="group rounded-xl border border-border bg-surface p-6 transition-colors hover:border-accent/50">
       <h3 className="text-base font-semibold text-foreground">{project.title}</h3>
       <p className="mt-3 text-sm leading-relaxed text-muted">{project.description}</p>
 

@@ -14,7 +14,7 @@ export default function ContactPage() {
       <div className="max-w-sm space-y-3">
         <a
           href={`mailto:${profile.email}`}
-          className="flex items-center gap-3 rounded-xl border border-border bg-white px-4 py-3.5 text-sm font-medium text-foreground transition-colors hover:border-accent hover:text-accent"
+          className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3.5 text-sm font-medium text-foreground transition-colors hover:border-accent hover:text-accent"
         >
           <MailIcon className="h-5 w-5 shrink-0" />
           {profile.email}
@@ -26,7 +26,7 @@ export default function ContactPage() {
             href={link.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 rounded-xl border border-border bg-white px-4 py-3.5 text-sm font-medium text-foreground transition-colors hover:border-accent hover:text-accent"
+            className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3.5 text-sm font-medium text-foreground transition-colors hover:border-accent hover:text-accent"
           >
             <SocialIcon icon={link.icon} className="h-5 w-5 shrink-0" />
             {link.label}

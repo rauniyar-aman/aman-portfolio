@@ -32,7 +32,7 @@ export default function SkillsInput({ skills, onChange }: SkillsInputProps) {
   }
 
   return (
-    <div className="rounded-md border border-border px-3 py-2">
+    <div className="rounded-md border border-border bg-surface px-3 py-2">
       <div className="flex flex-wrap gap-2">
         {skills.map((skill) => (
           <span
@@ -57,7 +57,7 @@ export default function SkillsInput({ skills, onChange }: SkillsInputProps) {
           onKeyDown={handleKeyDown}
           onBlur={commitDraft}
           placeholder={skills.length === 0 ? "Type a skill and press Enter…" : ""}
-          className="min-w-[8rem] flex-1 border-none py-0.5 text-sm focus:outline-none"
+          className="min-w-[8rem] flex-1 border-none bg-transparent py-0.5 text-sm text-foreground placeholder:text-muted focus:outline-none"
         />
       </div>
     </div>
