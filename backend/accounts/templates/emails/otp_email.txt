@@ -1,0 +1,13 @@
+{{ heading }}
+
+{{ intro }}
+
+    {{ code }}
+
+Expires in 15 minutes.
+
+{{ disclaimer }}
+
+---
+CV Maker by Blessing Technologies
+This is an automated message, please don't reply to this email.

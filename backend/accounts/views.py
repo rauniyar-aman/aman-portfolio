@@ -8,6 +8,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .models import OTPCode
 from .serializers import (
@@ -17,6 +18,7 @@ from .serializers import (
     PasswordResetVerifySerializer,
     ResendOTPSerializer,
     SignupSerializer,
+    UsernameTokenObtainPairSerializer,
     VerifySignupOTPSerializer,
 )
 from .utils import (
@@ -31,6 +33,10 @@ from .utils import (
 User = get_user_model()
 
 
+class UsernameTokenObtainPairView(TokenObtainPairView):
+    serializer_class = UsernameTokenObtainPairSerializer
+
+
 class SignupView(APIView):
     permission_classes = [AllowAny]
 
@@ -38,6 +44,7 @@ class SignupView(APIView):
         serializer = SignupSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data["email"]
+        username = serializer.validated_data["username"]
         full_name = serializer.validated_data["full_name"]
         password = serializer.validated_data["password"]
 
@@ -45,6 +52,17 @@ class SignupView(APIView):
         if existing and existing.is_active:
             return Response(
                 {"detail": "An account with this email already exists."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        username_taken = (
+            User.objects.filter(username=username)
+            .exclude(pk=existing.pk if existing else None)
+            .exists()
+        )
+        if username_taken:
+            return Response(
+                {"username": ["This username is already taken."]},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -57,9 +75,10 @@ class SignupView(APIView):
             # Abandoned signup — reuse the inactive account instead of
             # leaving orphaned rows behind for every retry.
             user = existing
+            user.username = username
             user.first_name = full_name
         else:
-            user = User(username=email, email=email, first_name=full_name, is_active=False)
+            user = User(username=username, email=email, first_name=full_name, is_active=False)
         user.set_password(password)
         user.save()
 

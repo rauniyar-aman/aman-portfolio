@@ -2,12 +2,17 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { ACCESS_COOKIE } from "@/lib/session";
 import { profile } from "@/lib/profile";
+import { decodeJwtPayload } from "@/lib/jwt";
 import Avatar from "@/components/Avatar";
 import NavMenu from "@/components/NavMenu";
 
 export default async function Navbar() {
   const cookieStore = await cookies();
-  const isAuthenticated = Boolean(cookieStore.get(ACCESS_COOKIE)?.value);
+  const accessToken = cookieStore.get(ACCESS_COOKIE)?.value;
+  const isAuthenticated = Boolean(accessToken);
+  const username = accessToken
+    ? decodeJwtPayload<{ username?: string }>(accessToken)?.username
+    : undefined;
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
@@ -19,7 +24,7 @@ export default async function Navbar() {
           </span>
         </Link>
 
-        <NavMenu isAuthenticated={isAuthenticated} />
+        <NavMenu isAuthenticated={isAuthenticated} username={username} />
       </nav>
     </header>
   );

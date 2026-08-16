@@ -2,7 +2,8 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -42,28 +43,41 @@ def send_otp_email(email: str, code: str, purpose: str):
     if purpose == OTPCode.Purpose.SIGNUP:
         subject = "Verify your email"
         intro = "Use the code below to verify your email and finish creating your account."
+        disclaimer = "If you didn't request this code, you can safely ignore this email — no account will be created."
     else:
         subject = "Reset your password"
         intro = "Use the code below to reset your password."
+        disclaimer = (
+            "If you didn't request this code, you can safely ignore this email — "
+            "your password will not be changed."
+        )
 
-    message = (
-        f"{intro}\n\n"
-        f"    {code}\n\n"
-        "This code expires in 15 minutes. If you didn't request this, you can ignore this email."
-    )
+    context = {
+        "subject": subject,
+        "heading": subject,
+        "intro": intro,
+        "code": code,
+        "disclaimer": disclaimer,
+    }
 
-    send_mail(
+    text_body = render_to_string("emails/otp_email.txt", context)
+    html_body = render_to_string("emails/otp_email.html", context)
+
+    message = EmailMultiAlternatives(
         subject=subject,
-        message=message,
+        body=text_body,
         from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[email],
-        fail_silently=False,
+        to=[email],
     )
+    message.attach_alternative(html_body, "text/html")
+    message.send(fail_silently=False)
 
 
 def issue_tokens(user) -> dict:
     refresh = RefreshToken.for_user(user)
-    return {"access": str(refresh.access_token), "refresh": str(refresh)}
+    refresh["username"] = user.username
+    access = refresh.access_token
+    return {"access": str(access), "refresh": str(refresh)}
 
 
 def get_or_create_social_user(email: str, full_name: str = ""):

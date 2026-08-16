@@ -8,21 +8,37 @@ import { API_URL } from "@/lib/api";
 export default function SignupPage() {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const res = await fetch(`${API_URL}/api/auth/signup/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ full_name: fullName, email, password }),
+        body: JSON.stringify({
+          full_name: fullName,
+          username,
+          email,
+          password,
+          confirm_password: confirmPassword,
+        }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -62,6 +78,23 @@ export default function SignupPage() {
           </div>
 
           <div>
+            <label htmlFor="username" className="mb-1 block text-sm font-medium text-foreground/80">
+              Username
+            </label>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              required
+              minLength={3}
+              autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
+            />
+          </div>
+
+          <div>
             <label htmlFor="email" className="mb-1 block text-sm font-medium text-foreground/80">
               Email
             </label>
@@ -78,17 +111,51 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="mb-1 block text-sm font-medium text-foreground/80">
-              Password
-            </label>
+            <div className="mb-1 flex items-center justify-between">
+              <label htmlFor="password" className="block text-sm font-medium text-foreground/80">
+                Password
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="text-xs font-medium text-accent hover:underline"
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
             <input
               id="password"
               name="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               required
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <div className="mb-1 flex items-center justify-between">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-foreground/80">
+                Confirm password
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                className="text-xs font-medium text-accent hover:underline"
+              >
+                {showConfirmPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              required
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
             />
           </div>

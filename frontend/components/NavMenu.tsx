@@ -22,7 +22,13 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export default function NavMenu({ isAuthenticated }: { isAuthenticated: boolean }) {
+export default function NavMenu({
+  isAuthenticated,
+  username,
+}: {
+  isAuthenticated: boolean;
+  username?: string;
+}) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -48,7 +54,8 @@ export default function NavMenu({ isAuthenticated }: { isAuthenticated: boolean 
         })}
 
         {isAuthenticated && (
-          <div className="ml-2 border-l border-border pl-3">
+          <div className="ml-2 flex items-center gap-3 border-l border-border pl-3">
+            {username && <span className="text-sm text-muted">{username}</span>}
             <LogoutButton />
           </div>
         )}
@@ -87,7 +94,8 @@ export default function NavMenu({ isAuthenticated }: { isAuthenticated: boolean 
               </Link>
             ))}
             {isAuthenticated && (
-              <div className="mt-1 border-t border-border px-2 pt-3">
+              <div className="mt-1 flex items-center justify-between border-t border-border px-2 pt-3">
+                {username && <span className="text-sm text-muted">{username}</span>}
                 <LogoutButton />
               </div>
             )}
