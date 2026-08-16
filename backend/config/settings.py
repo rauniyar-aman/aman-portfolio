@@ -113,7 +113,6 @@ SIMPLE_JWT = {
 
 CORS_ALLOWED_ORIGINS = _env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000")
 
-# --- Anthropic -----------------------------------------------------------
+# --- Gemini --------------------------------------------------------------
 
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-5")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")

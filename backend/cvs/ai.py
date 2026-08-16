@@ -1,7 +1,17 @@
 import json
 
-import anthropic
+import google.generativeai as genai
 from django.conf import settings
+from google.api_core import exceptions as google_exceptions
+
+# "gemini-2.0-flash" (the version originally specified) has been retired by
+# Google. "gemini-flash-latest" is its closest current equivalent, but its
+# free tier is only 20 requests/day — too tight for a CV tool where every
+# "Enhance with AI" click is one request. The "-lite" tier is built for
+# higher-volume, cheaper usage and is friendlier to the free tier, which was
+# the actual point of this migration. Both are aliases, so neither pins to
+# a specific version that can go stale the way "gemini-2.0-flash" did.
+GEMINI_MODEL = "gemini-flash-lite-latest"
 
 SUMMARY_SYSTEM_PROMPT = """
 You are writing a professional summary for a CV that will be submitted for a university application and alongside a UK Visa and Immigration (UKVI) application. You will be given the candidate's full CV data as JSON. The summary must:
@@ -41,25 +51,28 @@ class AIGenerationError(Exception):
     pass
 
 
-def _call_claude(system_prompt: str, user_prompt: str) -> str:
-    if not settings.ANTHROPIC_API_KEY:
-        raise AIGenerationError("ANTHROPIC_API_KEY is not configured on the server.")
+def _call_ai_model(system_prompt: str, user_prompt: str, json_mode: bool = False) -> str:
+    if not settings.GEMINI_API_KEY:
+        raise AIGenerationError("GEMINI_API_KEY is not configured on the server.")
 
-    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    genai.configure(api_key=settings.GEMINI_API_KEY)
+
+    generation_config = (
+        genai.GenerationConfig(response_mime_type="application/json") if json_mode else None
+    )
+
+    model = genai.GenerativeModel(
+        model_name=GEMINI_MODEL,
+        system_instruction=system_prompt,
+        generation_config=generation_config,
+    )
 
     try:
-        response = client.messages.create(
-            model=settings.ANTHROPIC_MODEL,
-            max_tokens=1024,
-            system=system_prompt,
-            messages=[{"role": "user", "content": user_prompt}],
-        )
-    except anthropic.APIError as exc:
-        raise AIGenerationError(f"Anthropic API error: {exc}") from exc
+        response = model.generate_content(user_prompt)
+    except google_exceptions.GoogleAPIError as exc:
+        raise AIGenerationError(f"Gemini API error: {exc}") from exc
 
-    return "".join(
-        block.text for block in response.content if getattr(block, "type", None) == "text"
-    ).strip()
+    return response.text.strip()
 
 
 def _strip_code_fence(text: str) -> str:
@@ -73,12 +86,12 @@ def _strip_code_fence(text: str) -> str:
 
 def generate_summary(prompt: str) -> str:
     """Generate a free-text CV summary paragraph."""
-    return _call_claude(SUMMARY_SYSTEM_PROMPT, prompt)
+    return _call_ai_model(SUMMARY_SYSTEM_PROMPT, prompt)
 
 
 def generate_experience_bullets(prompt: str) -> list:
     """Generate a list of achievement-oriented bullet points for one role."""
-    text = _strip_code_fence(_call_claude(EXPERIENCE_SYSTEM_PROMPT, prompt))
+    text = _strip_code_fence(_call_ai_model(EXPERIENCE_SYSTEM_PROMPT, prompt, json_mode=True))
 
     try:
         bullets = json.loads(text)
