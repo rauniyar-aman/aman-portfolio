@@ -12,3 +12,4 @@ class CVSerializer(serializers.ModelSerializer):
 
 class CVGenerateSerializer(serializers.Serializer):
     prompt = serializers.CharField(allow_blank=False, trim_whitespace=True)
+    mode = serializers.ChoiceField(choices=["summary", "experience"], default="summary")

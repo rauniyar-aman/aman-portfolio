@@ -1,11 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiPost, apiPut, ApiError } from "@/lib/api";
-import type { CV, CVContent, EducationItem, ExperienceItem } from "@/lib/types";
-import { emptyCVContent } from "@/lib/types";
+import type { CV, CVContent, EducationItem, ExperienceItem, Passport } from "@/lib/types";
+import { emptyCVContent, emptyPassport } from "@/lib/types";
+import DateInput from "@/components/DateInput";
+import LinksEditor from "@/components/LinksEditor";
+import MonthYearInput from "@/components/MonthYearInput";
 import SkillsInput from "@/components/SkillsInput";
+import ThemeColorPicker from "@/components/ThemeColorPicker";
 
 interface CVFormProps {
   mode: "create" | "edit";
@@ -15,11 +20,24 @@ interface CVFormProps {
 }
 
 function emptyExperience(): ExperienceItem {
-  return { title: "", company: "", start_date: "", end_date: "", description: "" };
+  return {
+    company: "",
+    position: "",
+    start_date: "",
+    end_date_or_present: "",
+    responsibilities: [],
+  };
 }
 
 function emptyEducation(): EducationItem {
-  return { degree: "", institution: "", year: "" };
+  return {
+    degree: "",
+    institute: "",
+    address: "",
+    percentage_grade: "",
+    start_date: "",
+    end_date: "",
+  };
 }
 
 const inputClass =
@@ -31,20 +49,27 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
   const [content, setContent] = useState<CVContent>(initialContent ?? emptyCVContent());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const [enhancingSummary, setEnhancingSummary] = useState(false);
   const [enhancingExpIndex, setEnhancingExpIndex] = useState<number | null>(null);
 
   const canEnhance = mode === "edit" && Boolean(cvId);
 
-  function updatePersonalInfo(field: keyof CVContent["personal_info"], value: string) {
+  function updateField<K extends keyof CVContent>(field: K, value: CVContent[K]) {
+    setContent((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function updatePassport(field: keyof Passport, value: string) {
     setContent((prev) => ({
       ...prev,
-      personal_info: { ...prev.personal_info, [field]: value },
+      passport: { ...(prev.passport ?? emptyPassport()), [field]: value },
     }));
   }
 
-  function updateExperience(index: number, field: keyof ExperienceItem, value: string) {
+  function updateExperience<K extends keyof ExperienceItem>(
+    index: number,
+    field: K,
+    value: ExperienceItem[K]
+  ) {
     setContent((prev) => ({
       ...prev,
       experience: prev.experience.map((item, i) =>
@@ -64,7 +89,11 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
     }));
   }
 
-  function updateEducation(index: number, field: keyof EducationItem, value: string) {
+  function updateEducation<K extends keyof EducationItem>(
+    index: number,
+    field: K,
+    value: EducationItem[K]
+  ) {
     setContent((prev) => ({
       ...prev,
       education: prev.education.map((item, i) =>
@@ -91,7 +120,6 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
   async function handleSave() {
     setSaving(true);
     setError(null);
-    setSavedMessage(null);
 
     try {
       if (mode === "create") {
@@ -101,7 +129,9 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
       }
 
       await apiPut<CV>(`/cvs/${cvId}/`, { title, content });
-      setSavedMessage("Saved.");
+      router.push("/cv-maker/dashboard");
+      router.refresh();
+      return;
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         router.push("/cv-maker/login");
@@ -118,15 +148,17 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
     setEnhancingSummary(true);
     setError(null);
 
-    const prompt = `Write a concise, professional 2-3 sentence CV summary for ${
-      content.personal_info.name || "the candidate"
-    }.${content.personal_info.summary ? ` Improve on this draft: "${content.personal_info.summary}"` : ""}`;
+    const prompt = `Candidate: ${content.full_name || "the candidate"}.${
+      content.summary ? ` Existing draft to improve on: "${content.summary}"` : ""
+    }`;
 
     try {
-      const result = await apiPost<CV>(`/cvs/${cvId}/generate/`, { prompt });
-      const generatedSummary = result.content?.personal_info?.summary;
-      if (generatedSummary) {
-        updatePersonalInfo("summary", generatedSummary);
+      const result = await apiPost<{ summary: string }>(`/cvs/${cvId}/generate/`, {
+        prompt,
+        mode: "summary",
+      });
+      if (result.summary) {
+        updateField("summary", result.summary);
       }
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
@@ -145,17 +177,21 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
     setError(null);
 
     const item = content.experience[index];
-    const prompt = `Write a strong, achievement-focused 2-4 sentence CV description for the role of ${
-      item.title || "this position"
-    } at ${item.company || "the company"}.${
-      item.description ? ` Improve on this draft: "${item.description}"` : ""
+    const prompt = `Role: ${item.position || "this position"} at ${
+      item.company || "the company"
+    }.${
+      item.responsibilities.length > 0
+        ? ` Existing draft bullet points to improve on: ${item.responsibilities.join(" | ")}`
+        : ""
     }`;
 
     try {
-      const result = await apiPost<CV>(`/cvs/${cvId}/generate/`, { prompt });
-      const generatedDescription = result.content?.experience?.[0]?.description;
-      if (generatedDescription) {
-        updateExperience(index, "description", generatedDescription);
+      const result = await apiPost<{ responsibilities: string[] }>(
+        `/cvs/${cvId}/generate/`,
+        { prompt, mode: "experience" }
+      );
+      if (result.responsibilities?.length) {
+        updateExperience(index, "responsibilities", result.responsibilities);
       }
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
@@ -168,8 +204,17 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
     }
   }
 
+  const passport = content.passport ?? emptyPassport();
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
+      <Link
+        href="/cv-maker/dashboard"
+        className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground"
+      >
+        ← Back to CVs
+      </Link>
+
       <div className="mb-6">
         <label htmlFor="cv-title" className="mb-1 block text-sm font-medium text-foreground/80">
           CV title
@@ -185,134 +230,138 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
         />
       </div>
 
-      <Section title="Personal info">
+      <Section title="Theme color">
+        <ThemeColorPicker
+          value={content.theme_color}
+          onChange={(color) => updateField("theme_color", color)}
+        />
+      </Section>
+
+      <Section title="Basic info">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Full name">
             <input
               type="text"
-              value={content.personal_info.name}
-              onChange={(e) => updatePersonalInfo("name", e.target.value)}
+              value={content.full_name}
+              onChange={(e) => updateField("full_name", e.target.value)}
               className={inputClass}
             />
           </Field>
           <Field label="Email">
             <input
               type="email"
-              value={content.personal_info.email}
-              onChange={(e) => updatePersonalInfo("email", e.target.value)}
+              value={content.email}
+              onChange={(e) => updateField("email", e.target.value)}
               className={inputClass}
             />
           </Field>
           <Field label="Phone">
             <input
               type="text"
-              value={content.personal_info.phone}
-              onChange={(e) => updatePersonalInfo("phone", e.target.value)}
+              value={content.phone}
+              onChange={(e) => updateField("phone", e.target.value)}
+              className={inputClass}
+            />
+          </Field>
+        </div>
+      </Section>
+
+      <Section title="Links">
+        <LinksEditor
+          links={content.links}
+          onChange={(links) => updateField("links", links)}
+        />
+      </Section>
+
+      <Section
+        title="Summary"
+        action={
+          <EnhanceButton
+            disabled={!canEnhance}
+            loading={enhancingSummary}
+            onClick={handleEnhanceSummary}
+          />
+        }
+      >
+        <textarea
+          value={content.summary}
+          onChange={(e) => updateField("summary", e.target.value)}
+          rows={4}
+          className={inputClass}
+        />
+      </Section>
+
+      <CollapsibleSection title="Additional Details (optional)">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Date of Birth">
+            <input
+              type="date"
+              value={content.dob}
+              onChange={(e) => updateField("dob", e.target.value)}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Marital Status">
+            <input
+              type="text"
+              value={content.marital_status}
+              onChange={(e) => updateField("marital_status", e.target.value)}
               className={inputClass}
             />
           </Field>
         </div>
 
-        <Field
-          label="Summary"
-          action={
-            <EnhanceButton
-              disabled={!canEnhance}
-              loading={enhancingSummary}
-              onClick={handleEnhanceSummary}
-            />
-          }
-        >
+        <Field label="Permanent Address">
           <textarea
-            value={content.personal_info.summary}
-            onChange={(e) => updatePersonalInfo("summary", e.target.value)}
-            rows={4}
+            value={content.address}
+            onChange={(e) => updateField("address", e.target.value)}
+            rows={2}
             className={inputClass}
           />
         </Field>
-      </Section>
 
-      <Section title="Experience" action={<AddButton onClick={addExperience} label="Add experience" />}>
-        <div className="space-y-6">
-          {content.experience.map((item, index) => (
-            <div key={index} className="rounded-md border border-border p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-xs font-medium uppercase tracking-wide text-muted">
-                  Experience {index + 1}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => removeExperience(index)}
-                  className="text-xs text-red-500 hover:text-red-700"
-                >
-                  Remove
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Role">
-                  <input
-                    type="text"
-                    value={item.title}
-                    onChange={(e) => updateExperience(index, "title", e.target.value)}
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Company">
-                  <input
-                    type="text"
-                    value={item.company}
-                    onChange={(e) => updateExperience(index, "company", e.target.value)}
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Start">
-                  <input
-                    type="text"
-                    placeholder="e.g. Jan 2022"
-                    value={item.start_date}
-                    onChange={(e) => updateExperience(index, "start_date", e.target.value)}
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="End">
-                  <input
-                    type="text"
-                    placeholder="e.g. Present"
-                    value={item.end_date}
-                    onChange={(e) => updateExperience(index, "end_date", e.target.value)}
-                    className={inputClass}
-                  />
-                </Field>
-              </div>
-
-              <Field
-                label="Description"
-                action={
-                  <EnhanceButton
-                    disabled={!canEnhance}
-                    loading={enhancingExpIndex === index}
-                    onClick={() => handleEnhanceExperience(index)}
-                  />
-                }
-              >
-                <textarea
-                  value={item.description}
-                  onChange={(e) => updateExperience(index, "description", e.target.value)}
-                  rows={3}
-                  className={inputClass}
-                />
-              </Field>
-            </div>
-          ))}
-          {content.experience.length === 0 && (
-            <p className="text-sm text-muted">No experience added yet.</p>
-          )}
+        <p className="mb-2 mt-4 text-xs font-medium uppercase tracking-wide text-muted">
+          Passport details
+        </p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Passport Number">
+            <input
+              type="text"
+              value={passport.number}
+              onChange={(e) => updatePassport("number", e.target.value)}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Issued By">
+            <input
+              type="text"
+              value={passport.issued_by}
+              onChange={(e) => updatePassport("issued_by", e.target.value)}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Issued Date">
+            <DateInput
+              value={passport.issued_date}
+              onChange={(value) => updatePassport("issued_date", value)}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Expiry Date">
+            <DateInput
+              value={passport.expiry_date}
+              onChange={(value) => updatePassport("expiry_date", value)}
+              className={inputClass}
+            />
+          </Field>
         </div>
-      </Section>
+      </CollapsibleSection>
 
-      <Section title="Education" action={<AddButton onClick={addEducation} label="Add education" />}>
-        <div className="space-y-4">
+      <Section
+        title="Education"
+        action={<AddButton onClick={addEducation} label="Add education" />}
+      >
+        <div className="space-y-6">
           {content.education.map((item, index) => (
             <div key={index} className="rounded-md border border-border p-4">
               <div className="mb-3 flex items-center justify-between">
@@ -328,8 +377,8 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <Field label="Degree">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Degree / Award">
                   <input
                     type="text"
                     value={item.degree}
@@ -337,19 +386,41 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
                     className={inputClass}
                   />
                 </Field>
-                <Field label="School">
+                <Field label="Institute">
                   <input
                     type="text"
-                    value={item.institution}
-                    onChange={(e) => updateEducation(index, "institution", e.target.value)}
+                    value={item.institute}
+                    onChange={(e) => updateEducation(index, "institute", e.target.value)}
                     className={inputClass}
                   />
                 </Field>
-                <Field label="Year">
+                <Field label="Institute Address">
                   <input
                     type="text"
-                    value={item.year}
-                    onChange={(e) => updateEducation(index, "year", e.target.value)}
+                    value={item.address}
+                    onChange={(e) => updateEducation(index, "address", e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Percentage / Grade">
+                  <input
+                    type="text"
+                    value={item.percentage_grade}
+                    onChange={(e) => updateEducation(index, "percentage_grade", e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Start Date">
+                  <MonthYearInput
+                    value={item.start_date}
+                    onChange={(value) => updateEducation(index, "start_date", value)}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="End Date">
+                  <MonthYearInput
+                    value={item.end_date}
+                    onChange={(value) => updateEducation(index, "end_date", value)}
                     className={inputClass}
                   />
                 </Field>
@@ -362,12 +433,111 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
         </div>
       </Section>
 
+      <Section
+        title="Experience"
+        action={<AddButton onClick={addExperience} label="Add experience" />}
+      >
+        <div className="space-y-6">
+          {content.experience.map((item, index) => {
+            const isPresent = item.end_date_or_present.trim().toLowerCase() === "present";
+            return (
+              <div key={index} className="rounded-md border border-border p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-xs font-medium uppercase tracking-wide text-muted">
+                    Experience {index + 1}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeExperience(index)}
+                    className="text-xs text-red-500 hover:text-red-700"
+                  >
+                    Remove
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Position">
+                    <input
+                      type="text"
+                      value={item.position}
+                      onChange={(e) => updateExperience(index, "position", e.target.value)}
+                      className={inputClass}
+                    />
+                  </Field>
+                  <Field label="Company">
+                    <input
+                      type="text"
+                      value={item.company}
+                      onChange={(e) => updateExperience(index, "company", e.target.value)}
+                      className={inputClass}
+                    />
+                  </Field>
+                  <Field label="Start Date">
+                    <MonthYearInput
+                      value={item.start_date}
+                      onChange={(value) => updateExperience(index, "start_date", value)}
+                      className={inputClass}
+                    />
+                  </Field>
+                  <Field label="End Date">
+                    <div className="flex items-center gap-2">
+                      <MonthYearInput
+                        disabled={isPresent}
+                        value={isPresent ? "" : item.end_date_or_present}
+                        onChange={(value) =>
+                          updateExperience(index, "end_date_or_present", value)
+                        }
+                        className={`${inputClass} disabled:opacity-50`}
+                      />
+                      <label className="flex shrink-0 items-center gap-1.5 text-xs text-muted">
+                        <input
+                          type="checkbox"
+                          checked={isPresent}
+                          onChange={(e) =>
+                            updateExperience(
+                              index,
+                              "end_date_or_present",
+                              e.target.checked ? "Present" : ""
+                            )
+                          }
+                        />
+                        Till date
+                      </label>
+                    </div>
+                  </Field>
+                </div>
+
+                <Field
+                  label="Responsibilities"
+                  action={
+                    <EnhanceButton
+                      disabled={!canEnhance}
+                      loading={enhancingExpIndex === index}
+                      onClick={() => handleEnhanceExperience(index)}
+                    />
+                  }
+                >
+                  <ResponsibilitiesEditor
+                    items={item.responsibilities}
+                    onChange={(responsibilities) =>
+                      updateExperience(index, "responsibilities", responsibilities)
+                    }
+                  />
+                </Field>
+              </div>
+            );
+          })}
+          {content.experience.length === 0 && (
+            <p className="text-sm text-muted">No experience added yet.</p>
+          )}
+        </div>
+      </Section>
+
       <Section title="Skills">
         <SkillsInput skills={content.skills} onChange={setSkills} />
       </Section>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
-      {savedMessage && <p className="mb-4 text-sm text-green-600">{savedMessage}</p>}
 
       <button
         type="button"
@@ -401,6 +571,30 @@ function Section({
   );
 }
 
+function CollapsibleSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="mb-8 rounded-md border border-border">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left"
+      >
+        <span className="text-sm font-semibold text-foreground">{title}</span>
+        <span className="text-muted">{open ? "−" : "+"}</span>
+      </button>
+      {open && <div className="border-t border-border p-4">{children}</div>}
+    </div>
+  );
+}
+
 function Field({
   label,
   action,
@@ -417,6 +611,59 @@ function Field({
         {action}
       </div>
       {children}
+    </div>
+  );
+}
+
+function ResponsibilitiesEditor({
+  items,
+  onChange,
+}: {
+  items: string[];
+  onChange: (items: string[]) => void;
+}) {
+  function updateBullet(index: number, value: string) {
+    onChange(items.map((bullet, i) => (i === index ? value : bullet)));
+  }
+
+  function removeBullet(index: number) {
+    onChange(items.filter((_, i) => i !== index));
+  }
+
+  function addBullet() {
+    onChange([...items, ""]);
+  }
+
+  return (
+    <div className="space-y-2">
+      {items.map((bullet, index) => (
+        <div key={index} className="flex items-center gap-2">
+          <span className="shrink-0 text-muted">•</span>
+          <input
+            type="text"
+            value={bullet}
+            onChange={(e) => updateBullet(index, e.target.value)}
+            className={inputClass}
+          />
+          <button
+            type="button"
+            onClick={() => removeBullet(index)}
+            className="shrink-0 text-xs text-red-500 hover:text-red-700"
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={addBullet}
+        className="text-sm font-medium text-muted hover:text-foreground"
+      >
+        + Add bullet point
+      </button>
+      {items.length === 0 && (
+        <p className="text-sm text-muted">No responsibilities added yet.</p>
+      )}
     </div>
   );
 }

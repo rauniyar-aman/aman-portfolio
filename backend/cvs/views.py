@@ -4,7 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .ai import AIGenerationError, generate_cv_content
+from .ai import AIGenerationError, generate_experience_bullets, generate_summary
 from .exports import render_cv_docx, render_cv_pdf
 from .models import CV
 from .permissions import IsOwner
@@ -23,18 +23,25 @@ class CVViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"])
     def generate(self, request, pk=None):
-        cv = self.get_object()
+        # Ownership check only — the generated text/bullets are handed back
+        # to the client to merge into its in-progress form state, not written
+        # to the CV here, so an in-flight edit elsewhere on the form can't be
+        # clobbered by this call.
+        self.get_object()
+
         serializer = CVGenerateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        prompt = serializer.validated_data["prompt"]
+        mode = serializer.validated_data["mode"]
 
         try:
-            generated_content = generate_cv_content(serializer.validated_data["prompt"])
+            if mode == "experience":
+                bullets = generate_experience_bullets(prompt)
+                return Response({"responsibilities": bullets})
+            summary = generate_summary(prompt)
+            return Response({"summary": summary})
         except AIGenerationError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
-
-        cv.content = generated_content
-        cv.save(update_fields=["content", "updated_at"])
-        return Response(CVSerializer(cv).data)
 
     @action(detail=True, methods=["get"], url_path="export/pdf")
     def export_pdf(self, request, pk=None):

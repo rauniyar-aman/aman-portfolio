@@ -27,4 +27,8 @@
 body {
   background: var(--color-bg);
   color: var(--color-fg);
+  /* Site is dark-only — this tells the browser to render native form
+     controls (date/month pickers, scrollbars) in their dark variant
+     instead of a jarring light-themed popup. */
+  color-scheme: dark;
 }

@@ -2,58 +2,240 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>{{ cv.title }}</title>
+<title>{{ full_name }} — Curriculum Vitae</title>
 <style>
-    @page { size: A4; margin: 2cm; }
-    body { font-family: "Helvetica Neue", Arial, sans-serif; color: #1a1a1a; font-size: 11pt; }
-    h1 { font-size: 22pt; margin-bottom: 0.1em; }
-    .contact { color: #555; margin-bottom: 1em; }
-    h2 { font-size: 13pt; border-bottom: 1px solid #ccc; padding-bottom: 0.2em; margin-top: 1.2em; }
-    .entry { margin-bottom: 0.8em; }
-    .entry-title { font-weight: bold; }
-    .entry-dates { color: #555; font-size: 9.5pt; }
-    .skills { line-height: 1.6; }
+    @page { size: A4; margin: 0.5in; }
+
+    * { box-sizing: border-box; }
+
+    body {
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        font-size: 10pt;
+        line-height: 1.4;
+        color: #1a1a1a;
+    }
+
+    .title {
+        text-align: center;
+        font-size: 18pt;
+        font-weight: bold;
+        color: {{ theme_color }};
+        letter-spacing: 1px;
+        margin: 0;
+    }
+
+    .name-line {
+        text-align: center;
+        font-size: 12pt;
+        font-weight: bold;
+        margin: 2px 0 0 0;
+    }
+
+    .header-address {
+        text-align: center;
+        font-size: 9.5pt;
+        color: #555555;
+        margin: 3px 0 0 0;
+    }
+
+    .header-line {
+        text-align: center;
+        font-size: 9.5pt;
+        margin: 2px 0 0 0;
+    }
+
+    .header-line a {
+        color: {{ theme_color }};
+        text-decoration: underline;
+    }
+
+    .header-line .sep {
+        color: #999999;
+        margin: 0 6px;
+    }
+
+    .title-rule {
+        border: none;
+        border-top: 2pt solid {{ theme_color }};
+        margin: 8px 0 14px 0;
+    }
+
+    h2.section-heading {
+        font-size: 11pt;
+        font-weight: bold;
+        color: {{ theme_color }};
+        text-transform: uppercase;
+        border-bottom: 1.5pt solid {{ theme_color }};
+        padding-bottom: 2px;
+        margin: 12px 0 6px 0;
+    }
+
+    table.details-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 2px;
+    }
+
+    table.details-table td {
+        padding: 1.5px 6px 1.5px 0;
+        vertical-align: top;
+        font-size: 10pt;
+    }
+
+    table.details-table td.label {
+        font-weight: bold;
+        width: 160px;
+        white-space: nowrap;
+    }
+
+    p.summary-text {
+        margin: 0;
+    }
+
+    table.edu-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 4px;
+    }
+
+    table.edu-table th {
+        background: {{ theme_color }};
+        color: #ffffff;
+        font-size: 9.5pt;
+        font-weight: bold;
+        text-align: left;
+        padding: 4px 6px;
+    }
+
+    table.edu-table td {
+        font-size: 9.5pt;
+        padding: 4px 6px;
+        border-bottom: 0.5pt solid #cccccc;
+        vertical-align: top;
+    }
+
+    .exp-entry {
+        margin-bottom: 10px;
+    }
+
+    .exp-entry:last-child {
+        margin-bottom: 0;
+    }
+
+    .exp-company {
+        font-weight: bold;
+    }
+
+    .exp-position {
+        font-style: italic;
+    }
+
+    .exp-tenure {
+        color: #666666;
+        font-size: 9pt;
+        margin: 1px 0 3px 0;
+    }
+
+    ul.bullets {
+        margin: 2px 0 0 0;
+        padding-left: 16px;
+    }
+
+    ul.bullets li {
+        margin-bottom: 2px;
+    }
+
+    p.skills-text {
+        margin: 0;
+    }
 </style>
 </head>
 <body>
-    {% with personal_info=content.personal_info %}
-    <h1>{{ personal_info.name|default:cv.title }}</h1>
-    <div class="contact">
-        {% if personal_info.email %}{{ personal_info.email }}{% endif %}
-        {% if personal_info.phone %} &middot; {{ personal_info.phone }}{% endif %}
-        {% if personal_info.location %} &middot; {{ personal_info.location }}{% endif %}
-    </div>
-
-    {% if personal_info.summary %}
-    <h2>Summary</h2>
-    <p>{{ personal_info.summary }}</p>
+    <p class="title">CURRICULUM VITAE</p>
+    {% if full_name %}<p class="name-line">{{ full_name }}</p>{% endif %}
+    {% if address %}<p class="header-address">{{ address }}</p>{% endif %}
+    {% if phone or email %}
+    <p class="header-line">
+        {% if phone %}{{ phone }}{% endif %}{% if phone and email %}<span class="sep">|</span>{% endif %}{% if email %}<a href="mailto:{{ email }}">{{ email }}</a>{% endif %}
+    </p>
     {% endif %}
-    {% endwith %}
+    {% if link_items %}
+    <p class="header-line">
+        {% for link in link_items %}<a href="{{ link.href }}">{{ link.text }}</a>{% if not forloop.last %}<span class="sep">|</span>{% endif %}{% endfor %}
+    </p>
+    {% endif %}
+    <hr class="title-rule">
 
-    {% if content.experience %}
-    <h2>Experience</h2>
-    {% for item in content.experience %}
-    <div class="entry">
-        <div class="entry-title">{{ item.title }} &mdash; {{ item.company }}</div>
-        <div class="entry-dates">{{ item.start_date }}{% if item.end_date %} &ndash; {{ item.end_date }}{% endif %}</div>
-        {% if item.description %}<p>{{ item.description }}</p>{% endif %}
+    {% if summary %}
+    <h2 class="section-heading">Summary</h2>
+    <p class="summary-text">{{ summary }}</p>
+    {% endif %}
+
+    {% if personal_rows %}
+    <h2 class="section-heading">Personal Details</h2>
+    <table class="details-table">
+        {% for label, value in personal_rows %}
+        <tr><td class="label">{{ label }}</td><td>{{ value }}</td></tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+
+    {% if passport_rows %}
+    <h2 class="section-heading">Passport Details</h2>
+    <table class="details-table">
+        {% for label, value in passport_rows %}
+        <tr><td class="label">{{ label }}</td><td>{{ value }}</td></tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+
+    {% if education_rows %}
+    <h2 class="section-heading">Academic Qualification</h2>
+    <table class="edu-table">
+        <thead>
+            <tr>
+                <th>Award</th>
+                <th>Institute</th>
+                <th>Address</th>
+                <th>Percentage/Grade</th>
+                <th>Duration</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for edu in education_rows %}
+            <tr>
+                <td>{{ edu.degree }}</td>
+                <td>{{ edu.institute }}</td>
+                <td>{{ edu.address }}</td>
+                <td>{{ edu.percentage_grade }}</td>
+                <td>{{ edu.duration }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if experience_rows %}
+    <h2 class="section-heading">Work Experience</h2>
+    {% for exp in experience_rows %}
+    <div class="exp-entry">
+        {% if exp.company %}<div class="exp-company">{{ exp.company }}</div>{% endif %}
+        {% if exp.position %}<div class="exp-position">{{ exp.position }}</div>{% endif %}
+        {% if exp.tenure %}<div class="exp-tenure">Tenure: {{ exp.tenure }}</div>{% endif %}
+        {% if exp.responsibilities %}
+        <ul class="bullets">
+            {% for bullet in exp.responsibilities %}
+            <li>{{ bullet }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
     </div>
     {% endfor %}
     {% endif %}
 
-    {% if content.education %}
-    <h2>Education</h2>
-    {% for item in content.education %}
-    <div class="entry">
-        <div class="entry-title">{{ item.degree }} &mdash; {{ item.institution }}</div>
-        {% if item.year %}<div class="entry-dates">{{ item.year }}</div>{% endif %}
-    </div>
-    {% endfor %}
-    {% endif %}
-
-    {% if content.skills %}
-    <h2>Skills</h2>
-    <p class="skills">{{ content.skills|join:", " }}</p>
+    {% if skills %}
+    <h2 class="section-heading">Skills</h2>
+    <p class="skills-text">{{ skills|join:", " }}</p>
     {% endif %}
 </body>
 </html>
