@@ -213,9 +213,16 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
     setEnhancingSummary(true);
     setError(null);
 
-    const prompt = `Candidate: ${content.full_name || "the candidate"}.${
-      content.summary ? ` Existing draft to improve on: "${content.summary}"` : ""
-    }`;
+    const prompt = JSON.stringify({
+      full_name: content.full_name,
+      dob: content.dob,
+      marital_status: content.marital_status,
+      address: content.address,
+      education: content.education,
+      experience: content.experience,
+      skills: content.skills,
+      existing_summary_draft: content.summary || null,
+    });
 
     try {
       const result = await apiPost<{ summary: string }>(`/cvs/${cvId}/generate/`, {
@@ -371,6 +378,10 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
           rows={4}
           className={inputClass}
         />
+        <p className="mt-1.5 text-xs text-muted">
+          AI-generated content should be reviewed for accuracy before submission, especially for
+          visa or university applications.
+        </p>
       </Section>
 
       <CollapsibleSection title="Additional Details (optional)">
