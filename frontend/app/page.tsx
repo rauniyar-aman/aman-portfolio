@@ -12,7 +12,7 @@ export default function HomePage() {
         className="h-24 w-24 border-2 border-border text-lg"
       />
 
-      <span className="mt-6 inline-flex w-fit items-center gap-1.5 rounded-full border border-border bg-accent-soft px-3 py-1 text-xs font-medium text-accent">
+      <span className="mt-6 inline-flex w-fit items-center gap-1.5 rounded-full border border-border bg-accent-soft px-3 py-1 text-xs font-medium text-accent-text">
         📍 {profile.location}
       </span>
 
@@ -22,7 +22,7 @@ export default function HomePage() {
 
       <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted">{profile.title}</p>
 
-      <p className="mt-6 text-xl font-medium tracking-tight text-accent">{profile.tagline}</p>
+      <p className="mt-6 text-xl font-medium tracking-tight text-accent-text">{profile.tagline}</p>
 
       <p className="mt-4 max-w-2xl text-base leading-relaxed text-foreground/80">
         {profile.intro}
@@ -31,13 +31,13 @@ export default function HomePage() {
       <div className="mt-10 flex flex-wrap items-center gap-4">
         <Link
           href="/projects"
-          className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent/90"
+          className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-hover"
         >
           View Projects
         </Link>
         <Link
           href="/contact"
-          className="rounded-full border border-border px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:border-accent hover:text-accent"
+          className="rounded-full border border-border px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:border-accent-text hover:text-accent-text"
         >
           Contact Me
         </Link>
@@ -51,7 +51,7 @@ export default function HomePage() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={link.label}
-            className="text-muted transition-colors hover:text-accent"
+            className="text-muted transition-colors hover:text-accent-text"
           >
             <SocialIcon icon={link.icon} className="h-6 w-6" />
           </a>

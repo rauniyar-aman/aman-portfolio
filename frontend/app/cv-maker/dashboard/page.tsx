@@ -73,13 +73,13 @@ export default function DashboardPage() {
           <h1 className="text-lg font-semibold text-foreground">Your CVs</h1>
           <Link
             href="/cv-maker/new"
-            className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink hover:bg-accent/90"
+            className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink hover:bg-accent-hover"
           >
             + New CV
           </Link>
         </div>
 
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+        {error && <p className="mb-4 text-sm text-red-700 dark:text-red-400">{error}</p>}
 
         {cvs === null && !error && <p className="text-sm text-muted">Loading…</p>}
 
@@ -124,7 +124,7 @@ export default function DashboardPage() {
                     type="button"
                     onClick={() => handleDelete(cv)}
                     disabled={busyId === cv.id}
-                    className="text-red-500 hover:text-red-700 disabled:opacity-50"
+                    className="text-red-700 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
                   >
                     Delete
                   </button>

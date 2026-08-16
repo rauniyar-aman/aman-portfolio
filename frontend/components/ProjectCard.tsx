@@ -3,7 +3,7 @@ import { GitHubIcon } from "@/components/icons";
 
 export default function ProjectCard({ project }: { project: Project }) {
   return (
-    <div className="group rounded-xl border border-border bg-surface p-6 transition-colors hover:border-accent/50">
+    <div className="group rounded-xl border border-border bg-surface p-6 transition-colors hover:border-accent-text/50">
       <h3 className="text-base font-semibold text-foreground">{project.title}</h3>
       <p className="mt-3 text-sm leading-relaxed text-muted">{project.description}</p>
 
@@ -11,7 +11,7 @@ export default function ProjectCard({ project }: { project: Project }) {
         {project.tech.map((tech) => (
           <span
             key={tech}
-            className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent"
+            className="rounded-full bg-accent-soft px-2.5 py-1 text-xs font-medium text-accent-text"
           >
             {tech}
           </span>
@@ -25,7 +25,7 @@ export default function ProjectCard({ project }: { project: Project }) {
               href={project.githubUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 font-medium text-foreground hover:text-accent"
+              className="flex items-center gap-1.5 font-medium text-foreground hover:text-accent-text"
             >
               <GitHubIcon className="h-4 w-4" />
               GitHub
@@ -36,7 +36,7 @@ export default function ProjectCard({ project }: { project: Project }) {
               href={project.liveUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-medium text-foreground hover:text-accent"
+              className="font-medium text-foreground hover:text-accent-text"
             >
               Live demo →
             </a>

@@ -36,7 +36,7 @@ export default function EditCVPage({ params }: { params: Promise<{ id: string }>
 
   return (
     <div className="min-h-screen bg-background">
-      {error && <p className="mx-auto max-w-3xl px-4 pt-6 text-sm text-red-600">{error}</p>}
+      {error && <p className="mx-auto max-w-3xl px-4 pt-6 text-sm text-red-700 dark:text-red-400">{error}</p>}
       {!cv && !error && (
         <p className="mx-auto max-w-3xl px-4 pt-6 text-sm text-muted">Loading…</p>
       )}

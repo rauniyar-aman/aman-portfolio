@@ -14,7 +14,7 @@ export default function AchievementsPage() {
         {achievements.map((achievement) => (
           <li key={achievement.title} className="relative pb-8 pl-8 last:pb-0">
             <span className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full bg-accent" />
-            <span className="text-xs font-semibold uppercase tracking-widest text-accent">
+            <span className="text-xs font-semibold uppercase tracking-widest text-accent-text">
               {achievement.year}
             </span>
             <h3 className="mt-1 text-base font-semibold text-foreground">{achievement.title}</h3>

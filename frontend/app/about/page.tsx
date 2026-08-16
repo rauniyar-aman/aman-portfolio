@@ -51,7 +51,7 @@ export default function AboutPage() {
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2.5 rounded-lg border border-border px-3.5 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:border-accent hover:text-accent"
+                className="flex items-center gap-2.5 rounded-lg border border-border px-3.5 py-2.5 text-sm font-medium text-foreground/80 transition-colors hover:border-accent-text hover:text-accent-text"
               >
                 <SocialIcon icon={link.icon} className="h-4 w-4" />
                 {link.label}
@@ -69,7 +69,7 @@ export default function AboutPage() {
             ))}
           </div>
 
-          <blockquote className="mt-8 border-l-2 border-accent pl-5 text-lg font-medium italic text-foreground/90">
+          <blockquote className="mt-8 border-l-2 border-accent-text pl-5 text-lg font-medium italic text-foreground/90">
             &ldquo;{QUOTE}&rdquo;
           </blockquote>
 
@@ -85,13 +85,13 @@ export default function AboutPage() {
           <div className="mt-10 flex flex-wrap gap-4">
             <Link
               href="/projects"
-              className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent/90"
+              className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-hover"
             >
               View Projects
             </Link>
             <Link
               href="/contact"
-              className="rounded-full border border-border px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:border-accent hover:text-accent"
+              className="rounded-full border border-border px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:border-accent-text hover:text-accent-text"
             >
               Contact Me
             </Link>

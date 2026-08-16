@@ -15,7 +15,7 @@ export default function Footer() {
           <div className="flex flex-col gap-3">
             <a
               href={`mailto:${profile.email}`}
-              className="flex items-center gap-2 text-sm text-muted hover:text-accent"
+              className="flex items-center gap-2 text-sm text-muted hover:text-accent-text"
             >
               <MailIcon className="h-4 w-4" />
               {profile.email}
@@ -28,7 +28,7 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={link.label}
-                  className="text-muted hover:text-accent"
+                  className="text-muted hover:text-accent-text"
                 >
                   <SocialIcon icon={link.icon} className="h-5 w-5" />
                 </a>
@@ -39,7 +39,7 @@ export default function Footer() {
 
         <div className="mt-8 flex flex-col gap-3 border-t border-border pt-6 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} {profile.name}. All rights reserved.</p>
-          <Link href="/cv-maker" className="hover:text-accent">
+          <Link href="/cv-maker" className="hover:text-accent-text">
             Built with the CV Maker tool →
           </Link>
         </div>

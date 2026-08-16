@@ -1,14 +1,43 @@
 @import "tailwindcss";
 
+/* Tailwind v4 has no JS config file — this is the CSS-native equivalent of
+   the old `darkMode: "class"` option, matching next-themes' attribute="class"
+   strategy instead of the default OS prefers-color-scheme media query. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
+  /* Light theme — dusty rose accent */
+  --color-bg: #ffffff;
+  --color-surface: #f5f3f3;
+  --color-fg: #2b2b2b;
+  --color-muted: #6b6b6b;
+  --color-accent: #e0929a;
+  --color-accent-hover: #c97781;
+  --color-accent-ink: #4b1528;
+  /* text/border use of accent needs a darker shade than the fill color —
+     #E0929A only hits ~2.4:1 on white as text, which fails WCAG AA (4.5:1).
+     This keeps the same rose hue but legible for links/labels/focus rings. */
+  --color-accent-text: #a94a5e;
+  --color-accent-soft: rgba(224, 146, 154, 0.15);
+  --color-border: #e0dede;
+  color-scheme: light;
+}
+
+.dark {
+  /* Dark theme — brand green accent (unchanged bg/surface/fg/muted/border) */
   --color-bg: #0a0a0a;
   --color-surface: #151513;
   --color-fg: #f5f4f1;
   --color-muted: #9c9689;
-  --color-accent: #fbbf24;
-  --color-accent-ink: #1c1a17;
-  --color-accent-soft: rgba(251, 191, 36, 0.1);
+  --color-accent: #1f4e37;
+  --color-accent-hover: #173c2a;
+  --color-accent-ink: #ffffff;
+  /* Same reasoning as the light theme's accent-text: literal #1F4E37 as text
+     on a near-black background is only ~2.1:1. Lightened for legibility. */
+  --color-accent-text: #45a878;
+  --color-accent-soft: rgba(31, 78, 55, 0.18);
   --color-border: #262420;
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -17,7 +46,9 @@
   --color-foreground: var(--color-fg);
   --color-muted: var(--color-muted);
   --color-accent: var(--color-accent);
+  --color-accent-hover: var(--color-accent-hover);
   --color-accent-ink: var(--color-accent-ink);
+  --color-accent-text: var(--color-accent-text);
   --color-accent-soft: var(--color-accent-soft);
   --color-border: var(--color-border);
   --font-sans: var(--font-geist-sans);
@@ -27,8 +58,4 @@
 body {
   background: var(--color-bg);
   color: var(--color-fg);
-  /* Site is dark-only — this tells the browser to render native form
-     controls (date/month pickers, scrollbars) in their dark variant
-     instead of a jarring light-themed popup. */
-  color-scheme: dark;
 }

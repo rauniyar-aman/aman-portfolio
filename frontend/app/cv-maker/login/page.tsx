@@ -232,7 +232,7 @@ function LoginForm() {
               autoComplete="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent-text focus:outline-none"
             />
           </div>
 
@@ -248,17 +248,17 @@ function LoginForm() {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent-text focus:outline-none"
             />
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-red-700 dark:text-red-400">{error}</p>}
 
           <div className="flex items-center justify-between text-sm">
-            <Link href="/cv-maker/signup" className="font-medium text-accent hover:underline">
+            <Link href="/cv-maker/signup" className="font-medium text-accent-text hover:underline">
               Sign up
             </Link>
-            <Link href="/cv-maker/forgot-password" className="font-medium text-accent hover:underline">
+            <Link href="/cv-maker/forgot-password" className="font-medium text-accent-text hover:underline">
               Forgot password?
             </Link>
           </div>
@@ -266,7 +266,7 @@ function LoginForm() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent/90 disabled:opacity-50"
+            className="w-full rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-50"
           >
             {isSubmitting ? "Logging in…" : "Log in"}
           </button>
@@ -296,7 +296,7 @@ function LoginForm() {
               )}
             </div>
 
-            {socialError && <p className="mt-3 text-sm text-red-600">{socialError}</p>}
+            {socialError && <p className="mt-3 text-sm text-red-700 dark:text-red-400">{socialError}</p>}
           </>
         )}
       </div>

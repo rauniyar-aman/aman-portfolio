@@ -98,7 +98,7 @@ function ResetPasswordForm() {
           </p>
           <Link
             href="/cv-maker/login"
-            className="inline-block w-full rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent/90"
+            className="inline-block w-full rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent-hover"
           >
             Log in
           </Link>
@@ -132,7 +132,7 @@ function ResetPasswordForm() {
               autoComplete="one-time-code"
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-center text-lg tracking-[0.5em] text-foreground focus:border-accent focus:outline-none"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-center text-lg tracking-[0.5em] text-foreground focus:border-accent-text focus:outline-none"
             />
           </div>
 
@@ -148,17 +148,17 @@ function ResetPasswordForm() {
               autoComplete="new-password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent-text focus:outline-none"
             />
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-red-700 dark:text-red-400">{error}</p>}
           {resendMessage && <p className="text-sm text-foreground/70">{resendMessage}</p>}
 
           <button
             type="submit"
             disabled={isSubmitting || code.length !== 6}
-            className="w-full rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent/90 disabled:opacity-50"
+            className="w-full rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-50"
           >
             {isSubmitting ? "Resetting…" : "Reset password"}
           </button>
@@ -173,7 +173,7 @@ function ResetPasswordForm() {
               type="button"
               onClick={handleResend}
               disabled={isResending}
-              className="font-medium text-accent hover:underline disabled:opacity-50"
+              className="font-medium text-accent-text hover:underline disabled:opacity-50"
             >
               {isResending ? "Sending…" : "Resend code"}
             </button>

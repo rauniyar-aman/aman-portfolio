@@ -23,7 +23,7 @@ export type SocialIcon = "github" | "linkedin" | "instagram";
 export const social: { label: string; href: string; icon: SocialIcon }[] = [
   { label: "GitHub", href: "https://github.com/rauniyar-aman", icon: "github" },
   { label: "LinkedIn", href: "https://linkedin.com/in/rauniyaraman", icon: "linkedin" },
-  { label: "Instagram", href: "https://instagram.com/aman.0", icon: "instagram" },
+  { label: "Instagram", href: "https://instagram.com/__aman.0__", icon: "instagram" },
 ];
 
 export interface Project {

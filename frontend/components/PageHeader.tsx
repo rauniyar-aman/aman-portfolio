@@ -9,7 +9,7 @@ export default function PageHeader({
 }) {
   return (
     <div className="mb-12">
-      <span className="text-xs font-semibold uppercase tracking-widest text-accent">
+      <span className="text-xs font-semibold uppercase tracking-widest text-accent-text">
         {eyebrow}
       </span>
       <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">

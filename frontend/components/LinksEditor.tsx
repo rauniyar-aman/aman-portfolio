@@ -8,7 +8,7 @@ const PRESETS = [
 ];
 
 const inputClass =
-  "w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-accent focus:outline-none";
+  "w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-accent-text focus:outline-none";
 
 export default function LinksEditor({
   links,
@@ -43,7 +43,7 @@ export default function LinksEditor({
           <button
             type="button"
             onClick={() => removeLink(index)}
-            className="shrink-0 text-xs text-red-500 hover:text-red-700"
+            className="shrink-0 text-xs text-red-700 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
           >
             Remove
           </button>
@@ -57,7 +57,7 @@ export default function LinksEditor({
             type="button"
             onClick={() => onChange([...links, preset.stub])}
             title={`Add a ${preset.label} link`}
-            className="rounded-full border border-border px-3 py-1 text-xs text-muted hover:border-accent hover:text-accent"
+            className="rounded-full border border-border px-3 py-1 text-xs text-muted hover:border-accent-text hover:text-accent-text"
           >
             + {preset.label}
           </button>

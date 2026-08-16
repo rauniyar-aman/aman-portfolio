@@ -28,7 +28,7 @@ export default function CvMakerLandingPage() {
 
       <Link
         href="/cv-maker/login"
-        className="mt-8 inline-block rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent/90"
+        className="mt-8 inline-block rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent-hover"
       >
         Log in
       </Link>

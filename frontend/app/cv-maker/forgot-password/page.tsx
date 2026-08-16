@@ -57,23 +57,23 @@ export default function ForgotPasswordPage() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent-text focus:outline-none"
             />
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-red-700 dark:text-red-400">{error}</p>}
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent/90 disabled:opacity-50"
+            className="w-full rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-50"
           >
             {isSubmitting ? "Sending…" : "Send reset code"}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-foreground/70">
-          <Link href="/cv-maker/login" className="font-medium text-accent hover:underline">
+          <Link href="/cv-maker/login" className="font-medium text-accent-text hover:underline">
             Back to log in
           </Link>
         </p>

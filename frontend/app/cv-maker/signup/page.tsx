@@ -73,7 +73,7 @@ export default function SignupPage() {
               autoComplete="name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent-text focus:outline-none"
             />
           </div>
 
@@ -90,7 +90,7 @@ export default function SignupPage() {
               autoComplete="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent-text focus:outline-none"
             />
           </div>
 
@@ -106,7 +106,7 @@ export default function SignupPage() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent-text focus:outline-none"
             />
           </div>
 
@@ -118,7 +118,7 @@ export default function SignupPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="text-xs font-medium text-accent hover:underline"
+                className="text-xs font-medium text-accent-text hover:underline"
               >
                 {showPassword ? "Hide" : "Show"}
               </button>
@@ -131,7 +131,7 @@ export default function SignupPage() {
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent-text focus:outline-none"
             />
           </div>
 
@@ -143,7 +143,7 @@ export default function SignupPage() {
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword((prev) => !prev)}
-                className="text-xs font-medium text-accent hover:underline"
+                className="text-xs font-medium text-accent-text hover:underline"
               >
                 {showConfirmPassword ? "Hide" : "Show"}
               </button>
@@ -156,16 +156,16 @@ export default function SignupPage() {
               autoComplete="new-password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent focus:outline-none"
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-accent-text focus:outline-none"
             />
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-red-700 dark:text-red-400">{error}</p>}
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent/90 disabled:opacity-50"
+            className="w-full rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-50"
           >
             {isSubmitting ? "Creating account…" : "Sign up"}
           </button>
@@ -173,7 +173,7 @@ export default function SignupPage() {
 
         <p className="mt-6 text-center text-sm text-foreground/70">
           Already have an account?{" "}
-          <Link href="/cv-maker/login" className="font-medium text-accent hover:underline">
+          <Link href="/cv-maker/login" className="font-medium text-accent-text hover:underline">
             Log in
           </Link>
         </p>

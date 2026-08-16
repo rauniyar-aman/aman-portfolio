@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LogoutButton from "@/components/LogoutButton";
+import ThemeToggle from "@/components/ThemeToggle";
 import { MenuIcon, CloseIcon } from "@/components/icons";
 
 const NAV_LINKS = [
@@ -60,23 +61,29 @@ export default function NavMenu({
           </div>
         )}
 
-        <Link
-          href="/contact"
-          className="ml-3 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent/90"
-        >
-          Contact Me
-        </Link>
+        <div className="ml-3 flex items-center gap-2">
+          <ThemeToggle />
+          <Link
+            href="/contact"
+            className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-hover"
+          >
+            Contact Me
+          </Link>
+        </div>
       </div>
 
-      <button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="rounded-md p-2 text-foreground lg:hidden"
-        aria-label={isOpen ? "Close menu" : "Open menu"}
-        aria-expanded={isOpen}
-      >
-        {isOpen ? <CloseIcon className="h-5 w-5" /> : <MenuIcon className="h-5 w-5" />}
-      </button>
+      <div className="flex items-center gap-1 lg:hidden">
+        <ThemeToggle />
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className="rounded-md p-2 text-foreground"
+          aria-label={isOpen ? "Close menu" : "Open menu"}
+          aria-expanded={isOpen}
+        >
+          {isOpen ? <CloseIcon className="h-5 w-5" /> : <MenuIcon className="h-5 w-5" />}
+        </button>
+      </div>
 
       {isOpen && (
         <div className="absolute inset-x-0 top-full border-b border-border bg-background shadow-lg lg:hidden">
@@ -87,7 +94,7 @@ export default function NavMenu({
                 href={link.href}
                 onClick={() => setIsOpen(false)}
                 className={`rounded-md px-2 py-2.5 text-sm font-medium ${
-                  isActive(pathname, link.href) ? "text-accent" : "text-foreground/80"
+                  isActive(pathname, link.href) ? "text-accent-text" : "text-foreground/80"
                 }`}
               >
                 {link.label}
