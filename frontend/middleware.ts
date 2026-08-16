@@ -2,9 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { ACCESS_COOKIE } from "@/lib/session";
 
 // Everything under /cv-maker/* is part of the protected tool, except the
-// public landing page (/cv-maker) and the login form (/cv-maker/login).
+// public landing page (/cv-maker) and the public auth pages (login, signup,
+// OTP verification, password reset).
+const PUBLIC_CV_MAKER_ROUTES = new Set([
+  "/cv-maker/login",
+  "/cv-maker/signup",
+  "/cv-maker/verify-otp",
+  "/cv-maker/forgot-password",
+  "/cv-maker/reset-password",
+]);
+
 function isProtectedCvMakerRoute(pathname: string): boolean {
-  return pathname.startsWith("/cv-maker/") && pathname !== "/cv-maker/login";
+  return pathname.startsWith("/cv-maker/") && !PUBLIC_CV_MAKER_ROUTES.has(pathname);
 }
 
 export function middleware(request: NextRequest) {
@@ -17,7 +26,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (pathname === "/cv-maker/login" && isAuthenticated) {
+  if (PUBLIC_CV_MAKER_ROUTES.has(pathname) && isAuthenticated) {
     return NextResponse.redirect(new URL("/cv-maker/dashboard", request.url));
   }
 

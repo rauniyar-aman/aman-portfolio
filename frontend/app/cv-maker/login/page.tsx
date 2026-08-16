@@ -1,8 +1,44 @@
 "use client";
 
-import { Suspense, useState, type FormEvent } from "react";
+import { Suspense, useEffect, useRef, useState, type FormEvent } from "react";
+import Link from "next/link";
+import Script from "next/script";
 import { useRouter, useSearchParams } from "next/navigation";
 import { API_URL } from "@/lib/api";
+
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
+const FACEBOOK_APP_ID = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID ?? "";
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string;
+            callback: (response: { credential: string }) => void;
+          }) => void;
+          renderButton: (parent: HTMLElement, options: Record<string, unknown>) => void;
+        };
+      };
+    };
+    FB?: {
+      init: (config: {
+        appId: string;
+        cookie?: boolean;
+        xfbml?: boolean;
+        version: string;
+      }) => void;
+      login: (
+        callback: (response: {
+          authResponse?: { accessToken: string };
+          status?: string;
+        }) => void,
+        options?: { scope: string }
+      ) => void;
+    };
+  }
+}
 
 export default function LoginPage() {
   return (
@@ -19,6 +55,110 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [socialError, setSocialError] = useState<string | null>(null);
+  const [isFacebookReady, setIsFacebookReady] = useState(false);
+  const googleButtonRef = useRef<HTMLDivElement>(null);
+
+  const next = searchParams.get("next") ?? "/cv-maker/dashboard";
+
+  async function completeSocialLogin(access: string, refresh: string) {
+    const sessionRes = await fetch("/api/auth/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ access, refresh }),
+    });
+
+    if (!sessionRes.ok) {
+      throw new Error("Could not start session. Please try again.");
+    }
+
+    router.push(next);
+    router.refresh();
+  }
+
+  async function handleGoogleCredential(idToken: string) {
+    setSocialError(null);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/google/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id_token: idToken }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.detail ?? "Google sign-in failed.");
+      }
+      await completeSocialLogin(data.access, data.refresh);
+    } catch (err) {
+      setSocialError(err instanceof Error ? err.message : "Google sign-in failed.");
+    }
+  }
+
+  async function handleFacebookAccessToken(accessToken: string) {
+    setSocialError(null);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/facebook/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ access_token: accessToken }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.detail ?? "Facebook sign-in failed.");
+      }
+      await completeSocialLogin(data.access, data.refresh);
+    } catch (err) {
+      setSocialError(err instanceof Error ? err.message : "Facebook sign-in failed.");
+    }
+  }
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) return;
+
+    function initGoogleButton() {
+      if (!window.google || !googleButtonRef.current) return;
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: (response) => {
+          void handleGoogleCredential(response.credential);
+        },
+      });
+      window.google.accounts.id.renderButton(googleButtonRef.current, {
+        theme: "outline",
+        size: "large",
+        width: 296,
+        text: "continue_with",
+      });
+    }
+
+    if (window.google) {
+      initGoogleButton();
+    } else {
+      const interval = setInterval(() => {
+        if (window.google) {
+          clearInterval(interval);
+          initGoogleButton();
+        }
+      }, 200);
+      return () => clearInterval(interval);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function handleFacebookLogin() {
+    if (!window.FB) return;
+    setSocialError(null);
+    window.FB.login(
+      (response) => {
+        if (response.authResponse?.accessToken) {
+          void handleFacebookAccessToken(response.authResponse.accessToken);
+        } else {
+          setSocialError("Facebook sign-in was cancelled.");
+        }
+      },
+      { scope: "email" }
+    );
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,20 +177,7 @@ function LoginForm() {
       }
 
       const { access, refresh } = await tokenRes.json();
-
-      const sessionRes = await fetch("/api/auth/session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ access, refresh }),
-      });
-
-      if (!sessionRes.ok) {
-        throw new Error("Could not start session. Please try again.");
-      }
-
-      const next = searchParams.get("next") ?? "/cv-maker/dashboard";
-      router.push(next);
-      router.refresh();
+      await completeSocialLogin(access, refresh);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -60,6 +187,18 @@ function LoginForm() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      {GOOGLE_CLIENT_ID && <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />}
+      {FACEBOOK_APP_ID && (
+        <Script
+          src="https://connect.facebook.net/en_US/sdk.js"
+          strategy="afterInteractive"
+          onLoad={() => {
+            window.FB?.init({ appId: FACEBOOK_APP_ID, cookie: true, xfbml: false, version: "v19.0" });
+            setIsFacebookReady(true);
+          }}
+        />
+      )}
+
       <div className="w-full max-w-sm rounded-lg border border-border bg-surface p-8 shadow-sm">
         <h1 className="mb-6 text-xl font-semibold text-foreground">Log in</h1>
 
@@ -98,6 +237,15 @@ function LoginForm() {
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
+          <div className="flex items-center justify-between text-sm">
+            <Link href="/cv-maker/signup" className="font-medium text-accent hover:underline">
+              Sign up
+            </Link>
+            <Link href="/cv-maker/forgot-password" className="font-medium text-accent hover:underline">
+              Forgot password?
+            </Link>
+          </div>
+
           <button
             type="submit"
             disabled={isSubmitting}
@@ -106,6 +254,33 @@ function LoginForm() {
             {isSubmitting ? "Logging in…" : "Log in"}
           </button>
         </form>
+
+        {(GOOGLE_CLIENT_ID || FACEBOOK_APP_ID) && (
+          <>
+            <div className="my-6 flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs uppercase tracking-wide text-foreground/50">or</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+
+            <div className="space-y-3">
+              {GOOGLE_CLIENT_ID && <div ref={googleButtonRef} className="flex justify-center" />}
+
+              {FACEBOOK_APP_ID && (
+                <button
+                  type="button"
+                  onClick={handleFacebookLogin}
+                  disabled={!isFacebookReady}
+                  className="flex w-full items-center justify-center rounded-md border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-surface disabled:opacity-50"
+                >
+                  Continue with Facebook
+                </button>
+              )}
+            </div>
+
+            {socialError && <p className="mt-3 text-sm text-red-600">{socialError}</p>}
+          </>
+        )}
       </div>
     </div>
   );
