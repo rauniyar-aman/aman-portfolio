@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiPost, apiPut, ApiError } from "@/lib/api";
-import type { CV, CVContent, EducationItem, ExperienceItem, Passport } from "@/lib/types";
-import { emptyCVContent, emptyPassport } from "@/lib/types";
+import type { Address, CV, CVContent, EducationItem, ExperienceItem, Passport } from "@/lib/types";
+import { emptyAddress, emptyCVContent, emptyPassport, MARITAL_STATUS_OPTIONS } from "@/lib/types";
+import { COUNTRIES } from "@/lib/countries";
+import { NATIONALITIES } from "@/lib/nationalities";
 import DateInput from "@/components/DateInput";
 import LinksEditor from "@/components/LinksEditor";
 import MonthYearInput from "@/components/MonthYearInput";
-import SkillsInput from "@/components/SkillsInput";
 import ThemeColorPicker from "@/components/ThemeColorPicker";
 
 interface CVFormProps {
@@ -54,6 +55,52 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
 
   const canEnhance = mode === "edit" && Boolean(cvId);
 
+  const initialSnapshotRef = useRef(
+    JSON.stringify({ title: initialTitle ?? "", content: initialContent ?? emptyCVContent() })
+  );
+  const isDirtyRef = useRef(false);
+
+  useEffect(() => {
+    isDirtyRef.current = JSON.stringify({ title, content }) !== initialSnapshotRef.current;
+  });
+
+  // Full page unload — refresh, close tab, typed URL, external link.
+  useEffect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      if (!isDirtyRef.current) return;
+      e.preventDefault();
+      e.returnValue = "";
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
+
+  // In-app navigation — Next's router does client-side transitions that
+  // don't trigger beforeunload, so clicks on internal links (nav bar,
+  // "Back to CVs", etc.) need their own guard. Runs in the capture phase so
+  // it sees the click before the Link component's own handler does; only
+  // cancelling (via stopPropagation) blocks the navigation — confirming
+  // just lets the click carry on to Link as normal.
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (!isDirtyRef.current) return;
+      const anchor = (e.target as HTMLElement)?.closest?.("a");
+      if (!anchor) return;
+      const href = anchor.getAttribute("href");
+      if (!href || !href.startsWith("/")) return;
+
+      const confirmed = window.confirm(
+        "You have unsaved changes on this CV. Leave without saving?"
+      );
+      if (!confirmed) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }
+    document.addEventListener("click", handleClick, true);
+    return () => document.removeEventListener("click", handleClick, true);
+  }, []);
+
   function updateField<K extends keyof CVContent>(field: K, value: CVContent[K]) {
     setContent((prev) => ({ ...prev, [field]: value }));
   }
@@ -62,6 +109,13 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
     setContent((prev) => ({
       ...prev,
       passport: { ...(prev.passport ?? emptyPassport()), [field]: value },
+    }));
+  }
+
+  function updateAddress(field: keyof Address, value: string) {
+    setContent((prev) => ({
+      ...prev,
+      address: { ...(prev.address ?? emptyAddress()), [field]: value },
     }));
   }
 
@@ -113,10 +167,6 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
     }));
   }
 
-  function setSkills(skills: string[]) {
-    setContent((prev) => ({ ...prev, skills }));
-  }
-
   async function handleSave() {
     setSaving(true);
     setError(null);
@@ -124,11 +174,13 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
     try {
       if (mode === "create") {
         const created = await apiPost<CV>("/cvs/", { title, content });
+        initialSnapshotRef.current = JSON.stringify({ title, content });
         router.push(`/cv-maker/${created.id}`);
         return;
       }
 
       await apiPut<CV>(`/cvs/${cvId}/`, { title, content });
+      initialSnapshotRef.current = JSON.stringify({ title, content });
       router.push("/cv-maker/dashboard");
       router.refresh();
       return;
@@ -205,6 +257,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
   }
 
   const passport = content.passport ?? emptyPassport();
+  const address = content.address ?? emptyAddress();
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -301,24 +354,64 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
               className={inputClass}
             />
           </Field>
+          <Field label="Nationality">
+            <select
+              value={content.nationality}
+              onChange={(e) => updateField("nationality", e.target.value)}
+              className={inputClass}
+            >
+              {NATIONALITIES.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+              {content.nationality && !NATIONALITIES.includes(content.nationality) && (
+                <option value={content.nationality}>{content.nationality}</option>
+              )}
+            </select>
+          </Field>
           <Field label="Marital Status">
-            <input
-              type="text"
+            <select
               value={content.marital_status}
               onChange={(e) => updateField("marital_status", e.target.value)}
               className={inputClass}
-            />
+            >
+              <option value="">Select…</option>
+              {MARITAL_STATUS_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+              {content.marital_status && !MARITAL_STATUS_OPTIONS.includes(content.marital_status) && (
+                <option value={content.marital_status}>{content.marital_status}</option>
+              )}
+            </select>
           </Field>
         </div>
 
-        <Field label="Permanent Address">
-          <textarea
-            value={content.address}
-            onChange={(e) => updateField("address", e.target.value)}
-            rows={2}
-            className={inputClass}
-          />
-        </Field>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_200px]">
+          <Field label="Permanent Address">
+            <textarea
+              value={address.detail}
+              onChange={(e) => updateAddress("detail", e.target.value)}
+              rows={2}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Country">
+            <select
+              value={address.country}
+              onChange={(e) => updateAddress("country", e.target.value)}
+              className={inputClass}
+            >
+              {COUNTRIES.map((country) => (
+                <option key={country} value={country}>
+                  {country}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
 
         <p className="mb-2 mt-4 text-xs font-medium uppercase tracking-wide text-muted">
           Passport details
@@ -534,7 +627,13 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
       </Section>
 
       <Section title="Skills">
-        <SkillsInput skills={content.skills} onChange={setSkills} />
+        <textarea
+          value={content.skills}
+          onChange={(e) => updateField("skills", e.target.value)}
+          rows={4}
+          placeholder="Write your skills however you like — one per line, comma-separated, or as a short paragraph."
+          className={inputClass}
+        />
       </Section>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}

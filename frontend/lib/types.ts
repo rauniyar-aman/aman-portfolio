@@ -1,10 +1,18 @@
 export const DEFAULT_THEME_COLOR = "#1F4E37";
+export const DEFAULT_NATIONALITY = "Nepalese";
+export const DEFAULT_COUNTRY = "Nepal";
+export const MARITAL_STATUS_OPTIONS = ["Single", "Married"];
 
 export interface Passport {
   number: string;
   issued_by: string;
   issued_date: string;
   expiry_date: string;
+}
+
+export interface Address {
+  detail: string; // street, city, province, postal code, etc.
+  country: string;
 }
 
 export interface EducationItem {
@@ -30,13 +38,14 @@ export interface CVContent {
   phone: string;
   summary: string;
   dob: string;
+  nationality: string;
   marital_status: string;
-  address: string;
+  address: Address;
   passport: Passport;
   links: string[]; // e.g. LinkedIn, GitHub, Instagram, portfolio URLs
   education: EducationItem[];
   experience: ExperienceItem[];
-  skills: string[];
+  skills: string; // free text — user writes it however they like
   theme_color: string;
 }
 
@@ -55,18 +64,60 @@ export const emptyPassport = (): Passport => ({
   expiry_date: "",
 });
 
+export const emptyAddress = (): Address => ({
+  detail: "",
+  country: DEFAULT_COUNTRY,
+});
+
 export const emptyCVContent = (): CVContent => ({
   full_name: "",
   email: "",
   phone: "",
   summary: "",
   dob: "",
+  nationality: DEFAULT_NATIONALITY,
   marital_status: "",
-  address: "",
+  address: emptyAddress(),
   passport: emptyPassport(),
   links: [],
   education: [],
   experience: [],
-  skills: [],
+  skills: "",
   theme_color: DEFAULT_THEME_COLOR,
 });
+
+/**
+ * Fills in defaults for any fields missing from a CV fetched from the API,
+ * and upgrades older shapes (address used to be a plain string; skills used
+ * to be a string[]) to the current schema — so opening a CV saved before
+ * one of those changes doesn't silently blank out or crash the form.
+ */
+export function normalizeCVContent(raw: unknown): CVContent {
+  const base = emptyCVContent();
+  if (!raw || typeof raw !== "object") return base;
+  const data = raw as Record<string, unknown>;
+
+  const rawAddress = data.address;
+  const address: Address =
+    typeof rawAddress === "string"
+      ? { detail: rawAddress, country: DEFAULT_COUNTRY }
+      : { ...emptyAddress(), ...((rawAddress as Partial<Address>) ?? {}) };
+
+  const rawSkills = data.skills;
+  const skills = Array.isArray(rawSkills)
+    ? rawSkills.filter((s): s is string => Boolean(s)).join("\n")
+    : typeof rawSkills === "string"
+      ? rawSkills
+      : base.skills;
+
+  return {
+    ...base,
+    ...data,
+    nationality: typeof data.nationality === "string" && data.nationality ? data.nationality : DEFAULT_NATIONALITY,
+    marital_status:
+      typeof data.marital_status === "string" ? data.marital_status.trim() : base.marital_status,
+    passport: { ...emptyPassport(), ...((data.passport as Partial<Passport>) ?? {}) },
+    address,
+    skills,
+  } as CVContent;
+}

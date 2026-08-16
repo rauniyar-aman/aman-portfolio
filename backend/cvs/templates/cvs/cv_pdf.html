@@ -15,20 +15,13 @@
         color: #1a1a1a;
     }
 
-    .title {
+    .name-line {
         text-align: center;
         font-size: 18pt;
         font-weight: bold;
         color: {{ theme_color }};
-        letter-spacing: 1px;
+        letter-spacing: 0.5px;
         margin: 0;
-    }
-
-    .name-line {
-        text-align: center;
-        font-size: 12pt;
-        font-weight: bold;
-        margin: 2px 0 0 0;
     }
 
     .header-address {
@@ -151,7 +144,6 @@
 </style>
 </head>
 <body>
-    <p class="title">CURRICULUM VITAE</p>
     {% if full_name %}<p class="name-line">{{ full_name }}</p>{% endif %}
     {% if address %}<p class="header-address">{{ address }}</p>{% endif %}
     {% if phone or email %}
@@ -235,7 +227,7 @@
 
     {% if skills %}
     <h2 class="section-heading">Skills</h2>
-    <p class="skills-text">{{ skills|join:", " }}</p>
+    <p class="skills-text">{{ skills|linebreaksbr }}</p>
     {% endif %}
 </body>
 </html>

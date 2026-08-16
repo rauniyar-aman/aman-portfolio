@@ -42,20 +42,37 @@ def build_cv_view_model(cv) -> dict:
     phone = content.get("phone", "")
     summary = content.get("summary", "")
     dob = content.get("dob", "")
+    nationality = content.get("nationality", "")
     marital_status = content.get("marital_status", "")
-    address = content.get("address", "")
     passport = content.get("passport") or {}
     education = content.get("education") or []
     experience = content.get("experience") or []
-    skills = [s for s in (content.get("skills") or []) if s]
+
+    # Free text now — the user writes it however they like (one per line,
+    # comma-separated, a short paragraph). Older CVs may still have it saved
+    # as a list from before that change, so normalize either shape.
+    raw_skills = content.get("skills") or ""
+    skills = "\n".join(s for s in raw_skills if s) if isinstance(raw_skills, list) else raw_skills
+
+    # Address used to be a plain string; it's now {detail, country} so the
+    # country can be a dropdown. Older CVs may still have the plain-string
+    # shape, so normalize both into one display string.
+    raw_address = content.get("address") or ""
+    if isinstance(raw_address, dict):
+        address = ", ".join(
+            part for part in (raw_address.get("detail", ""), raw_address.get("country", "")) if part
+        )
+    else:
+        address = raw_address
 
     # Name, address, phone/email, and links all render in the header block
     # (see the reference layout), not as body sections — so Personal Details
-    # only carries DOB/Marital Status now.
+    # only carries DOB/Nationality/Marital Status now.
     personal_rows = [
         row
         for row in (
             ("Date of Birth", dob),
+            ("Nationality", nationality),
             ("Marital Status", marital_status),
         )
         if row[1]
@@ -253,20 +270,14 @@ def render_cv_docx(cv) -> bytes:
         bullet.paragraph_format.space_after = Pt(2)
         bullet.add_run(f"•\t{text}")
 
-    # --- Header: title, name, address, contact, links --------------------
-    title = document.add_paragraph()
-    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    title_run = title.add_run("CURRICULUM VITAE")
-    title_run.bold = True
-    title_run.font.size = Pt(18)
-    title_run.font.color.rgb = _rgb(theme_color)
-
+    # --- Header: name, address, contact, links ----------------------------
     if vm["full_name"]:
         name_p = document.add_paragraph()
         name_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         name_run = name_p.add_run(vm["full_name"])
         name_run.bold = True
-        name_run.font.size = Pt(12)
+        name_run.font.size = Pt(18)
+        name_run.font.color.rgb = _rgb(theme_color)
 
     if vm["address"]:
         address_p = document.add_paragraph()
@@ -369,7 +380,8 @@ def render_cv_docx(cv) -> bytes:
     # --- Skills -----------------------------------------------------------
     if vm["skills"]:
         add_section_heading("Skills")
-        document.add_paragraph(", ".join(vm["skills"]))
+        for line in vm["skills"].split("\n"):
+            document.add_paragraph(line)
 
     buffer = io.BytesIO()
     document.save(buffer)
