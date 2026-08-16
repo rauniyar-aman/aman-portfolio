@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{ cv.title }}</title>
+<style>
+    @page { size: A4; margin: 2cm; }
+    body { font-family: "Helvetica Neue", Arial, sans-serif; color: #1a1a1a; font-size: 11pt; }
+    h1 { font-size: 22pt; margin-bottom: 0.1em; }
+    .contact { color: #555; margin-bottom: 1em; }
+    h2 { font-size: 13pt; border-bottom: 1px solid #ccc; padding-bottom: 0.2em; margin-top: 1.2em; }
+    .entry { margin-bottom: 0.8em; }
+    .entry-title { font-weight: bold; }
+    .entry-dates { color: #555; font-size: 9.5pt; }
+    .skills { line-height: 1.6; }
+</style>
+</head>
+<body>
+    {% with personal_info=content.personal_info %}
+    <h1>{{ personal_info.name|default:cv.title }}</h1>
+    <div class="contact">
+        {% if personal_info.email %}{{ personal_info.email }}{% endif %}
+        {% if personal_info.phone %} &middot; {{ personal_info.phone }}{% endif %}
+        {% if personal_info.location %} &middot; {{ personal_info.location }}{% endif %}
+    </div>
+
+    {% if personal_info.summary %}
+    <h2>Summary</h2>
+    <p>{{ personal_info.summary }}</p>
+    {% endif %}
+    {% endwith %}
+
+    {% if content.experience %}
+    <h2>Experience</h2>
+    {% for item in content.experience %}
+    <div class="entry">
+        <div class="entry-title">{{ item.title }} &mdash; {{ item.company }}</div>
+        <div class="entry-dates">{{ item.start_date }}{% if item.end_date %} &ndash; {{ item.end_date }}{% endif %}</div>
+        {% if item.description %}<p>{{ item.description }}</p>{% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if content.education %}
+    <h2>Education</h2>
+    {% for item in content.education %}
+    <div class="entry">
+        <div class="entry-title">{{ item.degree }} &mdash; {{ item.institution }}</div>
+        {% if item.year %}<div class="entry-dates">{{ item.year }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if content.skills %}
+    <h2>Skills</h2>
+    <p class="skills">{{ content.skills|join:", " }}</p>
+    {% endif %}
+</body>
+</html>
