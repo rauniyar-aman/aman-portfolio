@@ -7,8 +7,7 @@ import { achievements, bio, profile, skills, social } from "@/lib/profile";
 const totalTechnologies = skills.reduce((count, group) => count + group.items.length, 0);
 const foundingYear = achievements[0]?.year;
 
-const QUOTE =
-  "I care about building things that are genuinely useful — not just technically impressive.";
+const QUOTE = "I think the things I build are useful, they're not just technically cool.";
 
 const QUICK_FACTS = [
   { value: foundingYear, label: "Founded Blessing Technologies" },

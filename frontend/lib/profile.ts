@@ -13,9 +13,9 @@ export const profile = {
 };
 
 export const bio = [
-  "I'm Aman Rauniyar, based in Kathmandu, Nepal, working at the intersection of technology and international education. I'm the CEO of Blessing Technologies and the Managing Director & Senior Counsellor at The Blessing Edu, where I'm a British Council Certified UK Education Consultant. Over 5+ years, I've personally guided thousands of students through their journey to study abroad — from course and university selection to visa applications and beyond.",
-  "Outside of that, I build full-stack web applications — from e-commerce platforms with real payment gateway integrations to AI-powered internal tools — combining clean architecture with practical, real-world problem solving. I work across the stack with React, Next.js, Django, and Node.js, and I built this site's own AI-powered CV generation tool to help streamline hiring workflows at my own company.",
-  "I care about building things that are genuinely useful — not just technically impressive — and I'm always looking for the next problem worth solving.",
+  "I'm Aman Rauniyar, working in Kathmandu, Nepal, where technology and international education meet. I am a British Council Certified UK Education Consultant, Managing Director & Senior Counsellor at The Blessing Edu, and CEO of Blessing Technologies. I have personally helped thousands of students with their study abroad journey over 5+ years, ranging from course selection, university selection, visa application, and so on.",
+  "Otherwise, I develop full-stack web apps — from shopping carts that really work with payment gateways to internal tools that employ AI, clean architecture & real-world problem solving. I use React, Next.js, Django, and Node.js for working across the stack, and also developed my company's CV generation tool, which uses AI to help automate the hiring process.",
+  "I'm passionate about constructing something that's useful — and more importantly, not just technically cool but useful — and I'm always searching for the next problem to solve.",
 ];
 
 export type SocialIcon = "github" | "linkedin" | "instagram" | "facebook";
