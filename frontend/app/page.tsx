@@ -12,9 +12,14 @@ export default function HomePage() {
         className="h-24 w-24 border-2 border-border text-lg"
       />
 
-      <span className="mt-6 inline-flex w-fit items-center gap-1.5 rounded-full border border-border bg-accent-soft px-3 py-1 text-xs font-medium text-accent-text">
-        📍 {profile.location}
-      </span>
+      <div className="mt-6 flex flex-wrap items-center gap-2">
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-border bg-accent-soft px-3 py-1 text-xs font-medium text-accent-text">
+          📍 {profile.location}
+        </span>
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-border bg-accent-soft px-3 py-1 text-xs font-medium text-accent-text">
+          🎓 British Council Certified UK Education Consultant
+        </span>
+      </div>
 
       <h1 className="mt-6 text-4xl font-semibold tracking-tight text-foreground sm:text-6xl">
         {profile.name}

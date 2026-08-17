@@ -52,6 +52,7 @@ def build_cv_view_model(cv) -> dict:
     passport = content.get("passport") or {}
     education = content.get("education") or []
     experience = content.get("experience") or []
+    references = content.get("references") or []
 
     # Free text now — the user writes it however they like (one per line,
     # comma-separated, a short paragraph). Older CVs may still have it saved
@@ -123,6 +124,20 @@ def build_cv_view_model(cv) -> dict:
         for item in experience
     ]
 
+    # Omitted entirely (no heading, no rows) unless the user added at least
+    # one — references are the one section that's genuinely optional on a CV.
+    reference_rows = [
+        {
+            "name": item.get("name", ""),
+            "position": item.get("position", ""),
+            "company": item.get("company", ""),
+            "phone": item.get("phone", ""),
+            "email": item.get("email", ""),
+        }
+        for item in references
+        if item.get("name")
+    ]
+
     return {
         "theme_color": theme_color,
         "full_name": full_name,
@@ -136,6 +151,7 @@ def build_cv_view_model(cv) -> dict:
         "education_rows": education_rows,
         "experience_rows": experience_rows,
         "skills": skills,
+        "reference_rows": reference_rows,
     }
 
 
@@ -387,6 +403,29 @@ def render_cv_docx(cv) -> bytes:
         add_section_heading("Skills")
         for line in vm["skills"].split("\n"):
             document.add_paragraph(line)
+
+    # --- References --------------------------------------------------------
+    if vm["reference_rows"]:
+        add_section_heading("References")
+        for ref in vm["reference_rows"]:
+            entry = document.add_paragraph()
+            entry.paragraph_format.space_after = Pt(0)
+            name_run = entry.add_run(ref["name"])
+            name_run.bold = True
+
+            role = " – ".join(part for part in (ref["position"], ref["company"]) if part)
+            if role:
+                role_p = document.add_paragraph()
+                role_p.paragraph_format.space_after = Pt(0)
+                role_p.add_run(role).italic = True
+
+            contact = "   |   ".join(part for part in (ref["phone"], ref["email"]) if part)
+            if contact:
+                contact_p = document.add_paragraph()
+                contact_p.paragraph_format.space_after = Pt(6)
+                contact_run = contact_p.add_run(contact)
+                contact_run.font.size = Pt(9)
+                contact_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
 
     buffer = io.BytesIO()
     document.save(buffer)

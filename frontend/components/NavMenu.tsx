@@ -56,7 +56,11 @@ export default function NavMenu({
 
         {isAuthenticated && (
           <div className="ml-2 flex items-center gap-3 border-l border-border pl-3">
-            {username && <span className="text-sm text-muted">{username}</span>}
+            {username && (
+              <Link href="/cv-maker/dashboard" className="text-sm text-muted hover:text-foreground">
+                {username}
+              </Link>
+            )}
             <LogoutButton />
           </div>
         )}
@@ -102,7 +106,15 @@ export default function NavMenu({
             ))}
             {isAuthenticated && (
               <div className="mt-1 flex items-center justify-between border-t border-border px-2 pt-3">
-                {username && <span className="text-sm text-muted">{username}</span>}
+                {username && (
+                  <Link
+                    href="/cv-maker/dashboard"
+                    onClick={() => setIsOpen(false)}
+                    className="text-sm text-muted hover:text-foreground"
+                  >
+                    {username}
+                  </Link>
+                )}
                 <LogoutButton />
               </div>
             )}

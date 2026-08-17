@@ -1,5 +1,5 @@
 import PageHeader from "@/components/PageHeader";
-import { achievements } from "@/lib/profile";
+import { achievements, certifications } from "@/lib/profile";
 
 export default function AchievementsPage() {
   return (
@@ -24,6 +24,24 @@ export default function AchievementsPage() {
           </li>
         ))}
       </ol>
+
+      <div className="mt-16">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-accent-text">
+          Licenses &amp; Certifications
+        </h2>
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {certifications.map((cert) => (
+            <div
+              key={cert.title}
+              className="rounded-xl border border-border bg-surface p-4"
+            >
+              <h3 className="text-sm font-semibold text-foreground">{cert.title}</h3>
+              <p className="mt-1 text-sm text-muted">{cert.issuer}</p>
+              <p className="mt-1 text-xs text-muted">{cert.date}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </main>
   );
 }

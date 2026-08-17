@@ -12,6 +12,10 @@ class CV(models.Model):
     content = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # Soft delete: a user "deleting" their CV only hides it from their own
+    # dashboard/API — the row stays intact so admin can still view it.
+    is_deleted = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-updated_at"]

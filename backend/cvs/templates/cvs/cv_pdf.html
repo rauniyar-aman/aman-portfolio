@@ -141,6 +141,27 @@
     p.skills-text {
         margin: 0;
     }
+
+    .ref-entry {
+        margin-bottom: 8px;
+    }
+
+    .ref-entry:last-child {
+        margin-bottom: 0;
+    }
+
+    .ref-name {
+        font-weight: bold;
+    }
+
+    .ref-role {
+        font-style: italic;
+    }
+
+    .ref-contact {
+        color: #666666;
+        font-size: 9pt;
+    }
 </style>
 </head>
 <body>
@@ -228,6 +249,21 @@
     {% if skills %}
     <h2 class="section-heading">Skills</h2>
     <p class="skills-text">{{ skills|linebreaksbr }}</p>
+    {% endif %}
+
+    {% if reference_rows %}
+    <h2 class="section-heading">References</h2>
+    {% for ref in reference_rows %}
+    <div class="ref-entry">
+        <div class="ref-name">{{ ref.name }}</div>
+        {% if ref.position or ref.company %}
+        <div class="ref-role">{% if ref.position %}{{ ref.position }}{% endif %}{% if ref.position and ref.company %} – {% endif %}{% if ref.company %}{{ ref.company }}{% endif %}</div>
+        {% endif %}
+        {% if ref.phone or ref.email %}
+        <div class="ref-contact">{% if ref.phone %}{{ ref.phone }}{% endif %}{% if ref.phone and ref.email %}<span class="sep">|</span>{% endif %}{% if ref.email %}{{ ref.email }}{% endif %}</div>
+        {% endif %}
+    </div>
+    {% endfor %}
     {% endif %}
 </body>
 </html>

@@ -33,6 +33,14 @@ export interface ExperienceItem {
   responsibilities: string[];
 }
 
+export interface ReferenceItem {
+  name: string;
+  position: string;
+  company: string;
+  phone: string;
+  email: string;
+}
+
 export interface CVContent {
   full_name: string;
   email: string;
@@ -48,6 +56,7 @@ export interface CVContent {
   education: EducationItem[];
   experience: ExperienceItem[];
   skills: string; // free text — user writes it however they like
+  references: ReferenceItem[]; // optional — omitted entirely from the CV if empty
   theme_color: string;
 }
 
@@ -71,6 +80,14 @@ export const emptyAddress = (): Address => ({
   country: DEFAULT_COUNTRY,
 });
 
+export const emptyReference = (): ReferenceItem => ({
+  name: "",
+  position: "",
+  company: "",
+  phone: "",
+  email: "",
+});
+
 export const emptyCVContent = (): CVContent => ({
   full_name: "",
   email: "",
@@ -86,6 +103,7 @@ export const emptyCVContent = (): CVContent => ({
   education: [],
   experience: [],
   skills: "",
+  references: [],
   theme_color: DEFAULT_THEME_COLOR,
 });
 

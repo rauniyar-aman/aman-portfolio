@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { apiDelete, apiDownload, apiGet, ApiError, triggerBlobDownload } from "@/lib/api";
+import { apiDelete, apiDownload, apiGet, ApiError, previewBlob, triggerBlobDownload } from "@/lib/api";
 import type { CV } from "@/lib/types";
 
 export default function DashboardPage() {
@@ -42,6 +42,22 @@ export default function DashboardPage() {
         return;
       }
       setError(err instanceof Error ? err.message : "Could not delete CV.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handlePreview(cv: CV) {
+    setBusyId(cv.id);
+    try {
+      const { blob } = await apiDownload(`/cvs/${cv.id}/export/pdf/`, `${cv.title || "cv"}.pdf`);
+      previewBlob(blob);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        router.push("/cv-maker/login");
+        return;
+      }
+      setError(err instanceof Error ? err.message : "Could not generate preview.");
     } finally {
       setBusyId(null);
     }
@@ -104,6 +120,14 @@ export default function DashboardPage() {
                   <Link href={`/cv-maker/${cv.id}`} className="text-muted hover:text-foreground">
                     Edit
                   </Link>
+                  <button
+                    type="button"
+                    onClick={() => handlePreview(cv)}
+                    disabled={busyId === cv.id}
+                    className="text-muted hover:text-foreground disabled:opacity-50"
+                  >
+                    Preview
+                  </button>
                   <button
                     type="button"
                     onClick={() => handleExport(cv, "pdf")}

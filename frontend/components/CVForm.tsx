@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { apiPost, apiPut, ApiError } from "@/lib/api";
-import type { Address, CV, CVContent, EducationItem, ExperienceItem, Passport } from "@/lib/types";
-import { emptyAddress, emptyCVContent, emptyPassport, MARITAL_STATUS_OPTIONS } from "@/lib/types";
+import { apiDownload, apiPost, apiPut, ApiError, previewBlob, triggerBlobDownload } from "@/lib/api";
+import type { Address, CV, CVContent, EducationItem, ExperienceItem, Passport, ReferenceItem } from "@/lib/types";
+import { emptyAddress, emptyCVContent, emptyPassport, emptyReference, MARITAL_STATUS_OPTIONS } from "@/lib/types";
 import { COUNTRIES } from "@/lib/countries";
 import { COUNTRY_CODES, getCallingCodeForCountry } from "@/lib/countryCodes";
 import { NATIONALITIES } from "@/lib/nationalities";
@@ -50,9 +50,12 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
   const [title, setTitle] = useState(initialTitle ?? "");
   const [content, setContent] = useState<CVContent>(initialContent ?? emptyCVContent());
   const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [enhancingSummary, setEnhancingSummary] = useState(false);
   const [enhancingExpIndex, setEnhancingExpIndex] = useState<number | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState<"pdf" | "docx" | null>(null);
 
   const canEnhance = mode === "edit" && Boolean(cvId);
 
@@ -180,6 +183,30 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
     }));
   }
 
+  function updateReference<K extends keyof ReferenceItem>(
+    index: number,
+    field: K,
+    value: ReferenceItem[K]
+  ) {
+    setContent((prev) => ({
+      ...prev,
+      references: prev.references.map((item, i) =>
+        i === index ? { ...item, [field]: value } : item
+      ),
+    }));
+  }
+
+  function addReference() {
+    setContent((prev) => ({ ...prev, references: [...prev.references, emptyReference()] }));
+  }
+
+  function removeReference(index: number) {
+    setContent((prev) => ({
+      ...prev,
+      references: prev.references.filter((_, i) => i !== index),
+    }));
+  }
+
   async function handleSave() {
     setSaving(true);
     setError(null);
@@ -194,9 +221,11 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
 
       await apiPut<CV>(`/cvs/${cvId}/`, { title, content });
       initialSnapshotRef.current = JSON.stringify({ title, content });
-      router.push("/cv-maker/dashboard");
-      router.refresh();
-      return;
+      // Stay on the editor after saving an existing CV — instead of jumping
+      // to the dashboard, this is where Preview/Export live so the user can
+      // check the result before downloading anything.
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 3000);
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         router.push("/cv-maker/login");
@@ -205,6 +234,47 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
       setError(err instanceof Error ? err.message : "Could not save the CV.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handlePreview() {
+    if (!cvId) return;
+    setPreviewing(true);
+    setError(null);
+
+    try {
+      const { blob } = await apiDownload(`/cvs/${cvId}/export/pdf`, `${title || "cv"}.pdf`);
+      previewBlob(blob);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        router.push("/cv-maker/login");
+        return;
+      }
+      setError(err instanceof Error ? err.message : "Could not generate preview.");
+    } finally {
+      setPreviewing(false);
+    }
+  }
+
+  async function handleExport(format: "pdf" | "docx") {
+    if (!cvId) return;
+    setExportingFormat(format);
+    setError(null);
+
+    try {
+      const { blob, filename } = await apiDownload(
+        `/cvs/${cvId}/export/${format}`,
+        `${title || "cv"}.${format}`
+      );
+      triggerBlobDownload(blob, filename);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        router.push("/cv-maker/login");
+        return;
+      }
+      setError(err instanceof Error ? err.message : `Could not export ${format.toUpperCase()}.`);
+    } finally {
+      setExportingFormat(null);
     }
   }
 
@@ -676,16 +746,123 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
         />
       </Section>
 
+      <Section
+        title="References"
+        action={<AddButton onClick={addReference} label="Add reference" />}
+      >
+        <div className="space-y-6">
+          <p className="text-sm text-muted">
+            Optional — only shown on the CV if you add at least one.
+          </p>
+          {content.references.map((item, index) => (
+            <div key={index} className="rounded-md border border-border p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-xs font-medium uppercase tracking-wide text-muted">
+                  Reference {index + 1}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeReference(index)}
+                  className="text-xs text-red-700 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                >
+                  Remove
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Name">
+                  <input
+                    type="text"
+                    value={item.name}
+                    onChange={(e) => updateReference(index, "name", e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Position">
+                  <input
+                    type="text"
+                    value={item.position}
+                    onChange={(e) => updateReference(index, "position", e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Company">
+                  <input
+                    type="text"
+                    value={item.company}
+                    onChange={(e) => updateReference(index, "company", e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Phone">
+                  <input
+                    type="text"
+                    value={item.phone}
+                    onChange={(e) => updateReference(index, "phone", e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Email">
+                  <input
+                    type="email"
+                    value={item.email}
+                    onChange={(e) => updateReference(index, "email", e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+              </div>
+            </div>
+          ))}
+          {content.references.length === 0 && (
+            <p className="text-sm text-muted">No references added yet.</p>
+          )}
+        </div>
+      </Section>
+
       {error && <p className="mb-4 text-sm text-red-700 dark:text-red-400">{error}</p>}
 
-      <button
-        type="button"
-        onClick={handleSave}
-        disabled={saving || !title}
-        className="rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-50"
-      >
-        {saving ? "Saving…" : "Save"}
-      </button>
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving || !title}
+          className="rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-accent-ink hover:bg-accent-hover disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save"}
+        </button>
+
+        {canEnhance && (
+          <>
+            <button
+              type="button"
+              onClick={handlePreview}
+              disabled={previewing}
+              title="Opens a PDF preview in a new tab so you can check it before downloading"
+              className="rounded-full border border-border px-6 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-accent-text hover:text-accent-text disabled:opacity-50"
+            >
+              {previewing ? "Preparing preview…" : "Preview"}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleExport("pdf")}
+              disabled={exportingFormat !== null}
+              className="rounded-full border border-border px-6 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-accent-text hover:text-accent-text disabled:opacity-50"
+            >
+              {exportingFormat === "pdf" ? "Exporting…" : "Download PDF"}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleExport("docx")}
+              disabled={exportingFormat !== null}
+              className="rounded-full border border-border px-6 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-accent-text hover:text-accent-text disabled:opacity-50"
+            >
+              {exportingFormat === "docx" ? "Exporting…" : "Download DOCX"}
+            </button>
+          </>
+        )}
+
+        {justSaved && <span className="text-sm text-muted">Saved ✓ — preview it before you download.</span>}
+      </div>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 from django.http import HttpResponse
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -16,10 +17,18 @@ class CVViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsOwner]
 
     def get_queryset(self):
-        return CV.objects.filter(owner=self.request.user)
+        return CV.objects.filter(owner=self.request.user, is_deleted=False)
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
+
+    def perform_destroy(self, instance):
+        # Soft delete — the row (and its content) stays in the database for
+        # admin visibility; it just drops out of every user-facing queryset
+        # above, so the owner sees it as gone.
+        instance.is_deleted = True
+        instance.deleted_at = timezone.now()
+        instance.save(update_fields=["is_deleted", "deleted_at"])
 
     @action(detail=True, methods=["post"])
     def generate(self, request, pk=None):

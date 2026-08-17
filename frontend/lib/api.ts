@@ -104,3 +104,12 @@ export function triggerBlobDownload(blob: Blob, filename: string) {
   anchor.remove();
   URL.revokeObjectURL(url);
 }
+
+export function previewBlob(blob: Blob) {
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank", "noopener,noreferrer");
+  // The new tab loads the blob URL asynchronously, so revoking right away
+  // can yank the resource out from under it — give it a minute before
+  // releasing the memory.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
