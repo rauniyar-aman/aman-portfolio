@@ -54,6 +54,10 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
   const [error, setError] = useState<string | null>(null);
   const [enhancingSummary, setEnhancingSummary] = useState(false);
   const [enhancingExpIndex, setEnhancingExpIndex] = useState<number | null>(null);
+  const [summaryEnhanceError, setSummaryEnhanceError] = useState<string | null>(null);
+  const [expEnhanceError, setExpEnhanceError] = useState<{ index: number; message: string } | null>(
+    null
+  );
   const [previewing, setPreviewing] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<"pdf" | "docx" | null>(null);
 
@@ -281,7 +285,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
   async function handleEnhanceSummary() {
     if (!cvId) return;
     setEnhancingSummary(true);
-    setError(null);
+    setSummaryEnhanceError(null);
 
     const prompt = JSON.stringify({
       full_name: content.full_name,
@@ -307,7 +311,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
         router.push("/cv-maker/login");
         return;
       }
-      setError(err instanceof Error ? err.message : "AI enhancement failed.");
+      setSummaryEnhanceError(err instanceof Error ? err.message : "AI enhancement failed.");
     } finally {
       setEnhancingSummary(false);
     }
@@ -316,7 +320,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
   async function handleEnhanceExperience(index: number) {
     if (!cvId) return;
     setEnhancingExpIndex(index);
-    setError(null);
+    setExpEnhanceError(null);
 
     const item = content.experience[index];
     const prompt = `Role: ${item.position || "this position"} at ${
@@ -340,7 +344,10 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
         router.push("/cv-maker/login");
         return;
       }
-      setError(err instanceof Error ? err.message : "AI enhancement failed.");
+      setExpEnhanceError({
+        index,
+        message: err instanceof Error ? err.message : "AI enhancement failed.",
+      });
     } finally {
       setEnhancingExpIndex(null);
     }
@@ -448,6 +455,9 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
           rows={4}
           className={inputClass}
         />
+        {summaryEnhanceError && (
+          <p className="mt-1.5 text-xs text-red-700 dark:text-red-400">{summaryEnhanceError}</p>
+        )}
         <p className="mt-1.5 text-xs text-muted">
           AI-generated content should be reviewed for accuracy before submission, especially for
           visa or university applications.
@@ -726,6 +736,11 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
                       updateExperience(index, "responsibilities", responsibilities)
                     }
                   />
+                  {expEnhanceError?.index === index && (
+                    <p className="mt-1.5 text-xs text-red-700 dark:text-red-400">
+                      {expEnhanceError.message}
+                    </p>
+                  )}
                 </Field>
               </div>
             );

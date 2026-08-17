@@ -1,8 +1,21 @@
 import json
+import logging
+import random
+import time
 
 import google.generativeai as genai
 from django.conf import settings
 from google.api_core import exceptions as google_exceptions
+
+logger = logging.getLogger(__name__)
+
+# "Retry up to 3 times" = 3 retries after the first attempt (4 tries total),
+# waiting 1s, then 2s, then 4s between them, per the exponential backoff.
+MAX_RETRIES = 3
+BASE_BACKOFF_SECONDS = 1
+RATE_LIMIT_MESSAGE = (
+    "Our AI assistant is a bit busy right now — please wait a moment and try again."
+)
 
 # "gemini-2.0-flash" (the version originally specified) has been retired by
 # Google. "gemini-flash-latest" is its closest current equivalent, but its
@@ -68,12 +81,33 @@ def _call_ai_model(system_prompt: str, user_prompt: str, json_mode: bool = False
         generation_config=generation_config,
     )
 
-    try:
-        response = model.generate_content(user_prompt)
-    except google_exceptions.GoogleAPIError as exc:
-        raise AIGenerationError(f"Gemini API error: {exc}") from exc
+    last_exc = None
+    for attempt in range(MAX_RETRIES + 1):
+        try:
+            response = model.generate_content(user_prompt)
+            return response.text.strip()
+        except google_exceptions.ResourceExhausted as exc:
+            last_exc = exc
+            if attempt == MAX_RETRIES:
+                break
+            wait_seconds = BASE_BACKOFF_SECONDS * (2**attempt) + random.uniform(0, 0.5)
+            logger.warning(
+                "Gemini rate limit hit (attempt %d/%d) — retrying in %.1fs: %s",
+                attempt + 1,
+                MAX_RETRIES + 1,
+                wait_seconds,
+                exc,
+            )
+            time.sleep(wait_seconds)
+        except google_exceptions.GoogleAPIError as exc:
+            raise AIGenerationError(f"Gemini API error: {exc}") from exc
 
-    return response.text.strip()
+    # Retries exhausted — log the real error for our own visibility, but
+    # don't expose "429 ResourceExhausted" jargon to the user.
+    logger.error(
+        "Gemini rate limit exceeded after %d attempts: %s", MAX_RETRIES + 1, last_exc
+    )
+    raise AIGenerationError(RATE_LIMIT_MESSAGE) from last_exc
 
 
 def _strip_code_fence(text: str) -> str:
