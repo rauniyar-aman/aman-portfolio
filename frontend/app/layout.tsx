@@ -22,6 +22,17 @@ export const metadata: Metadata = {
   icons: {
     icon: "/icon.png",
   },
+  openGraph: {
+    title: `${profile.name} — ${profile.tagline}`,
+    description: profile.intro,
+    images: ["/logo-full.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${profile.name} — ${profile.tagline}`,
+    description: profile.intro,
+    images: ["/logo-full.png"],
+  },
 };
 
 export default function RootLayout({
