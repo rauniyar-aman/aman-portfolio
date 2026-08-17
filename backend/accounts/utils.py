@@ -1,8 +1,8 @@
 from datetime import timedelta
 
+import resend
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils import timezone
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -63,14 +63,15 @@ def send_otp_email(email: str, code: str, purpose: str):
     text_body = render_to_string("emails/otp_email.txt", context)
     html_body = render_to_string("emails/otp_email.html", context)
 
-    message = EmailMultiAlternatives(
-        subject=subject,
-        body=text_body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        to=[email],
-    )
-    message.attach_alternative(html_body, "text/html")
-    message.send(fail_silently=False)
+    resend.api_key = settings.RESEND_API_KEY
+
+    resend.Emails.send({
+        "from": settings.DEFAULT_FROM_EMAIL,
+        "to": [email],
+        "subject": subject,
+        "html": html_body,
+        "text": text_body,
+    })
 
 
 def issue_tokens(user) -> dict:
