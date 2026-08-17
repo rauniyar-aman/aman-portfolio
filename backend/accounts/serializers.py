@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from rest_framework import serializers
@@ -5,16 +6,28 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import OTPCode
 
+User = get_user_model()
+
 
 class UsernameTokenObtainPairSerializer(TokenObtainPairSerializer):
     """Embeds the username as a token claim so the frontend can display who's
-    logged in without an extra API round trip."""
+    logged in without an extra API round trip. Also accepts an email address
+    in the username field, resolving it to the matching account's username
+    before handing off to SimpleJWT's normal authentication."""
 
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
         token["username"] = user.username
         return token
+
+    def validate(self, attrs):
+        identifier = attrs.get(self.username_field, "")
+        if "@" in identifier:
+            user = User.objects.filter(email__iexact=identifier.strip(), is_active=True).first()
+            if user is not None:
+                attrs[self.username_field] = user.get_username()
+        return super().validate(attrs)
 
 
 class SignupSerializer(serializers.Serializer):
