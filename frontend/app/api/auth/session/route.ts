@@ -6,8 +6,6 @@ import {
   refreshCookieOptions,
 } from "@/lib/session";
 
-export const runtime = "edge";
-
 // Called by the login page right after it receives {access, refresh} from
 // the Django token endpoint. Storing them here as httpOnly cookies is what
 // keeps the JWTs out of reach of client-side JS/localStorage.

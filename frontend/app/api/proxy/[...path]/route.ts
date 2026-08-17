@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { ACCESS_COOKIE, REFRESH_COOKIE, accessCookieOptions } from "@/lib/session";
 
-export const runtime = "edge";
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 // Every authenticated request from the browser goes through this route

@@ -24,10 +24,6 @@ export const metadata: Metadata = {
   },
 };
 
-// Cloudflare Pages only supports the Edge runtime — this cascades to every
-// route nested under the root layout, so it doesn't need repeating per page.
-export const runtime = "edge";
-
 export default function RootLayout({
   children,
 }: Readonly<{
