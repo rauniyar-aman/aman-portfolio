@@ -15,6 +15,21 @@
         color: #1a1a1a;
     }
 
+    .header-wrap {
+        position: relative;
+    }
+
+    .header-photo {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid {{ theme_color }};
+    }
+
     .name-line {
         text-align: center;
         font-size: 18pt;
@@ -165,18 +180,21 @@
 </style>
 </head>
 <body>
-    {% if full_name %}<p class="name-line">{{ full_name }}</p>{% endif %}
-    {% if address %}<p class="header-address">{{ address }}</p>{% endif %}
-    {% if phone or email %}
-    <p class="header-line">
-        {% if phone %}{{ phone }}{% endif %}{% if phone and email %}<span class="sep">|</span>{% endif %}{% if email %}<a href="mailto:{{ email }}">{{ email }}</a>{% endif %}
-    </p>
-    {% endif %}
-    {% if link_items %}
-    <p class="header-line">
-        {% for link in link_items %}<a href="{{ link.href }}">{{ link.text }}</a>{% if not forloop.last %}<span class="sep">|</span>{% endif %}{% endfor %}
-    </p>
-    {% endif %}
+    <div class="header-wrap">
+        {% if photo %}<img class="header-photo" src="{{ photo }}">{% endif %}
+        {% if full_name %}<p class="name-line">{{ full_name }}</p>{% endif %}
+        {% if address %}<p class="header-address">{{ address }}</p>{% endif %}
+        {% if phone or email %}
+        <p class="header-line">
+            {% if phone %}{{ phone }}{% endif %}{% if phone and email %}<span class="sep">|</span>{% endif %}{% if email %}<a href="mailto:{{ email }}">{{ email }}</a>{% endif %}
+        </p>
+        {% endif %}
+        {% if link_items %}
+        <p class="header-line">
+            {% for link in link_items %}<a href="{{ link.href }}">{{ link.text }}</a>{% if not forloop.last %}<span class="sep">|</span>{% endif %}{% endfor %}
+        </p>
+        {% endif %}
+    </div>
     <hr class="title-rule">
 
     {% if summary %}
@@ -244,6 +262,11 @@
         {% endif %}
     </div>
     {% endfor %}
+    {% endif %}
+
+    {% if languages_display %}
+    <h2 class="section-heading">Languages</h2>
+    <p class="skills-text">{{ languages_display }}</p>
     {% endif %}
 
     {% if skills %}

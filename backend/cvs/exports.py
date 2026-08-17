@@ -1,3 +1,5 @@
+import base64
+import binascii
 import io
 import os
 import re
@@ -13,6 +15,7 @@ from docx.shared import Inches, Pt, RGBColor
 
 DEFAULT_THEME_COLOR = "#1F4E37"
 DEFAULT_PHONE_COUNTRY_CODE = "+977"
+TEMPLATE_CHOICES = ("classic", "modern", "minimalist", "academic")
 
 
 def _rgb(hex_color: str) -> RGBColor:
@@ -33,10 +36,17 @@ def _clean_link(raw: str) -> dict:
 def build_cv_view_model(cv) -> dict:
     """Shape a CV's raw JSON content into the exact fields/sections the PDF
     and DOCX exporters render, including which optional sections should be
-    omitted. Shared by both exporters so their omission rules can't drift.
+    omitted. Shared by both exporters (and all four template styles) so
+    their omission rules can't drift.
     """
     content = cv.content or {}
     theme_color = content.get("theme_color") or DEFAULT_THEME_COLOR
+
+    template = content.get("template") or "classic"
+    if template not in TEMPLATE_CHOICES:
+        template = "classic"
+
+    photo = content.get("photo") or ""
 
     full_name = content.get("full_name", "")
     email = content.get("email", "")
@@ -70,6 +80,23 @@ def build_cv_view_model(cv) -> dict:
         )
     else:
         address = raw_address
+
+    # Just names, no proficiency level.
+    raw_languages = content.get("languages") or []
+    languages = [str(lang).strip() for lang in raw_languages if lang and str(lang).strip()]
+    languages_display = ", ".join(languages)
+
+    # Only used by the academic template; omitted (no heading) if empty.
+    raw_publications = content.get("publications") or []
+    publication_rows = [
+        {
+            "title": pub.get("title", ""),
+            "venue": pub.get("venue", ""),
+            "year": pub.get("year", ""),
+        }
+        for pub in raw_publications
+        if pub.get("title")
+    ]
 
     # Name, address, phone/email, and links all render in the header block
     # (see the reference layout), not as body sections — so Personal Details
@@ -139,7 +166,9 @@ def build_cv_view_model(cv) -> dict:
     ]
 
     return {
+        "template": template,
         "theme_color": theme_color,
+        "photo": photo,
         "full_name": full_name,
         "address": address,
         "phone": phone_display,
@@ -152,6 +181,9 @@ def build_cv_view_model(cv) -> dict:
         "experience_rows": experience_rows,
         "skills": skills,
         "reference_rows": reference_rows,
+        "languages": languages,
+        "languages_display": languages_display,
+        "publication_rows": publication_rows,
     }
 
 
@@ -184,6 +216,14 @@ def _ensure_windows_gtk_dll_dir():
             return
 
 
+PDF_TEMPLATES = {
+    "classic": "cvs/cv_pdf.html",
+    "modern": "cvs/cv_pdf_modern.html",
+    "minimalist": "cvs/cv_pdf_minimalist.html",
+    "academic": "cvs/cv_pdf_academic.html",
+}
+
+
 def render_cv_pdf(cv) -> bytes:
     # Imported lazily: WeasyPrint requires native GTK/Pango libraries that may
     # not be installed on every host, and we don't want that to break imports
@@ -191,7 +231,9 @@ def render_cv_pdf(cv) -> bytes:
     _ensure_windows_gtk_dll_dir()
     from weasyprint import HTML
 
-    html_string = render_to_string("cvs/cv_pdf.html", build_cv_view_model(cv))
+    vm = build_cv_view_model(cv)
+    template_name = PDF_TEMPLATES.get(vm["template"], PDF_TEMPLATES["classic"])
+    html_string = render_to_string(template_name, vm)
     return HTML(string=html_string).write_pdf()
 
 
@@ -245,12 +287,187 @@ def _set_cell_background(cell, color_hex: str):
     tcPr.append(shd)
 
 
-def render_cv_docx(cv) -> bytes:
-    vm = build_cv_view_model(cv)
-    theme_color = vm["theme_color"]
+def _decode_photo(photo_data_uri: str):
+    if not photo_data_uri or "," not in photo_data_uri:
+        return None
+    _, encoded = photo_data_uri.split(",", 1)
+    try:
+        return io.BytesIO(base64.b64decode(encoded))
+    except (ValueError, TypeError, binascii.Error):
+        return None
 
-    document = Document()
 
+def _make_picture_circular(inline_shape):
+    """python-docx has no crop/clip API; Word (and most viewers) render an
+    inline picture circularly if its geometry is overridden to "ellipse" on
+    the underlying <pic:spPr> element — the standard OOXML recipe for this,
+    same category of manual XML patch as _add_hyperlink/_set_cell_background
+    above."""
+    pic = inline_shape._inline.graphic.graphicData.pic
+    spPr = pic.spPr
+    for tag in ("a:prstGeom", "a:custGeom"):
+        existing = spPr.find(qn(tag))
+        if existing is not None:
+            spPr.remove(existing)
+    geom = OxmlElement("a:prstGeom")
+    geom.set("prst", "ellipse")
+    geom.append(OxmlElement("a:avLst"))
+    spPr.append(geom)
+
+
+def _add_circular_photo(container, photo_data_uri: str, size: float):
+    """Adds a square, circularly-clipped photo to `container` (a Document or
+    a table _Cell — both support add_paragraph()), centered in its own
+    paragraph. No-op if the photo can't be decoded."""
+    stream = _decode_photo(photo_data_uri)
+    if not stream:
+        return None
+    paragraph = container.add_paragraph()
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = paragraph.add_run()
+    picture = run.add_picture(stream, width=Inches(size), height=Inches(size))
+    _make_picture_circular(picture)
+    return paragraph
+
+
+def _add_heading(container, text, color_hex, size=11, bold=True):
+    heading = container.add_paragraph()
+    heading.paragraph_format.space_before = Pt(10)
+    heading.paragraph_format.space_after = Pt(4)
+    run = heading.add_run(text.upper())
+    run.bold = bold
+    run.font.size = Pt(size)
+    run.font.color.rgb = _rgb(color_hex)
+    _add_bottom_border(heading, color_hex)
+    return heading
+
+
+def _add_label_value_rows(container, rows):
+    table = container.add_table(rows=0, cols=2)
+    table.autofit = True
+    for label, value in rows:
+        row = table.add_row()
+        label_cell, value_cell = row.cells
+        label_run = label_cell.paragraphs[0].add_run(label)
+        label_run.bold = True
+        label_run.font.size = Pt(10)
+        value_run = value_cell.paragraphs[0].add_run(value)
+        value_run.font.size = Pt(10)
+
+
+def _add_bullet(container, text):
+    bullet = container.add_paragraph()
+    bullet.paragraph_format.left_indent = Pt(18)
+    bullet.paragraph_format.first_line_indent = Pt(-14)
+    bullet.paragraph_format.space_after = Pt(2)
+    bullet.add_run(f"•\t{text}")
+
+
+def _write_header_text(container, vm, theme_color, align_center=True):
+    if vm["full_name"]:
+        name_p = container.add_paragraph()
+        if align_center:
+            name_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        name_run = name_p.add_run(vm["full_name"])
+        name_run.bold = True
+        name_run.font.size = Pt(18)
+        name_run.font.color.rgb = _rgb(theme_color)
+
+    if vm["address"]:
+        address_p = container.add_paragraph()
+        if align_center:
+            address_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        address_p.paragraph_format.space_after = Pt(0)
+        address_run = address_p.add_run(vm["address"])
+        address_run.font.size = Pt(9.5)
+        address_run.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+
+    if vm["phone"] or vm["email"]:
+        contact_p = container.add_paragraph()
+        if align_center:
+            contact_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        contact_p.paragraph_format.space_after = Pt(0)
+        if vm["phone"]:
+            contact_p.add_run(vm["phone"]).font.size = Pt(9.5)
+        if vm["phone"] and vm["email"]:
+            contact_p.add_run("   |   ").font.size = Pt(9.5)
+        if vm["email"]:
+            _add_hyperlink(contact_p, f"mailto:{vm['email']}", vm["email"], theme_color)
+
+    if vm["link_items"]:
+        links_p = container.add_paragraph()
+        if align_center:
+            links_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        for i, link in enumerate(vm["link_items"]):
+            if i > 0:
+                links_p.add_run("   |   ").font.size = Pt(9.5)
+            _add_hyperlink(links_p, link["href"], link["text"], theme_color)
+
+
+def _add_education_table(container, education_rows, theme_color):
+    headers = ["Award", "Institute", "Address", "Percentage/Grade", "Duration"]
+    table = container.add_table(rows=1, cols=len(headers))
+    table.autofit = True
+    header_row = table.rows[0]
+    for cell, header in zip(header_row.cells, headers):
+        _set_cell_background(cell, theme_color)
+        run = cell.paragraphs[0].add_run(header)
+        run.bold = True
+        run.font.size = Pt(9.5)
+        run.font.color.rgb = _rgb("#FFFFFF")
+    for edu in education_rows:
+        row = table.add_row()
+        values = [edu["degree"], edu["institute"], edu["address"], edu["percentage_grade"], edu["duration"]]
+        for cell, value in zip(row.cells, values):
+            run = cell.paragraphs[0].add_run(value)
+            run.font.size = Pt(9.5)
+
+
+def _add_experience_entries(container, experience_rows):
+    for exp in experience_rows:
+        entry = container.add_paragraph()
+        entry.paragraph_format.space_after = Pt(0)
+        company_run = entry.add_run(exp["company"])
+        company_run.bold = True
+
+        if exp["position"]:
+            position_p = container.add_paragraph()
+            position_p.paragraph_format.space_after = Pt(0)
+            position_p.add_run(exp["position"]).italic = True
+
+        if exp["tenure"]:
+            tenure_p = container.add_paragraph()
+            tenure_p.paragraph_format.space_after = Pt(2)
+            tenure_run = tenure_p.add_run(f"Tenure: {exp['tenure']}")
+            tenure_run.font.size = Pt(9)
+            tenure_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+
+        for bullet in exp["responsibilities"]:
+            _add_bullet(container, bullet)
+
+
+def _add_reference_entries(container, reference_rows):
+    for ref in reference_rows:
+        entry = container.add_paragraph()
+        entry.paragraph_format.space_after = Pt(0)
+        entry.add_run(ref["name"]).bold = True
+
+        role = " – ".join(part for part in (ref["position"], ref["company"]) if part)
+        if role:
+            role_p = container.add_paragraph()
+            role_p.paragraph_format.space_after = Pt(0)
+            role_p.add_run(role).italic = True
+
+        contact = "   |   ".join(part for part in (ref["phone"], ref["email"]) if part)
+        if contact:
+            contact_p = container.add_paragraph()
+            contact_p.paragraph_format.space_after = Pt(6)
+            contact_run = contact_p.add_run(contact)
+            contact_run.font.size = Pt(9)
+            contact_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+
+
+def _configure_document(document):
     section = document.sections[0]
     section.left_margin = Inches(0.5)
     section.right_margin = Inches(0.5)
@@ -261,171 +478,258 @@ def render_cv_docx(cv) -> bytes:
     normal.font.name = "Arial"
     normal.font.size = Pt(10)
 
-    def add_section_heading(text):
-        heading = document.add_paragraph()
-        heading.paragraph_format.space_before = Pt(10)
-        heading.paragraph_format.space_after = Pt(4)
-        run = heading.add_run(text.upper())
-        run.bold = True
-        run.font.size = Pt(11)
-        run.font.color.rgb = _rgb(theme_color)
-        _add_bottom_border(heading, theme_color)
-        return heading
 
-    def add_label_value_rows(rows):
-        table = document.add_table(rows=0, cols=2)
-        table.autofit = True
-        for label, value in rows:
-            row = table.add_row()
-            label_cell, value_cell = row.cells
-            label_run = label_cell.paragraphs[0].add_run(label)
-            label_run.bold = True
-            label_run.font.size = Pt(10)
-            value_run = value_cell.paragraphs[0].add_run(value)
-            value_run.font.size = Pt(10)
-
-    def add_bullet(text):
-        bullet = document.add_paragraph()
-        bullet.paragraph_format.left_indent = Pt(18)
-        bullet.paragraph_format.first_line_indent = Pt(-14)
-        bullet.paragraph_format.space_after = Pt(2)
-        bullet.add_run(f"•\t{text}")
-
-    # --- Header: name, address, contact, links ----------------------------
-    if vm["full_name"]:
-        name_p = document.add_paragraph()
-        name_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        name_run = name_p.add_run(vm["full_name"])
-        name_run.bold = True
-        name_run.font.size = Pt(18)
-        name_run.font.color.rgb = _rgb(theme_color)
-
-    if vm["address"]:
-        address_p = document.add_paragraph()
-        address_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        address_p.paragraph_format.space_after = Pt(0)
-        address_run = address_p.add_run(vm["address"])
-        address_run.font.size = Pt(9.5)
-        address_run.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
-
-    if vm["phone"] or vm["email"]:
-        contact_p = document.add_paragraph()
-        contact_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        contact_p.paragraph_format.space_after = Pt(0)
-        if vm["phone"]:
-            contact_p.add_run(vm["phone"]).font.size = Pt(9.5)
-        if vm["phone"] and vm["email"]:
-            contact_p.add_run("   |   ").font.size = Pt(9.5)
-        if vm["email"]:
-            _add_hyperlink(contact_p, f"mailto:{vm['email']}", vm["email"], theme_color)
-
-    if vm["link_items"]:
-        links_p = document.add_paragraph()
-        links_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        for i, link in enumerate(vm["link_items"]):
-            if i > 0:
-                links_p.add_run("   |   ").font.size = Pt(9.5)
-            _add_hyperlink(links_p, link["href"], link["text"], theme_color)
+def _docx_classic(document, vm, theme_color):
+    photo = vm["photo"]
+    if photo:
+        header_table = document.add_table(rows=1, cols=2)
+        header_table.autofit = False
+        text_cell, photo_cell = header_table.rows[0].cells
+        header_table.columns[0].width = Inches(5.7)
+        header_table.columns[1].width = Inches(1.3)
+        text_cell.width = Inches(5.7)
+        photo_cell.width = Inches(1.3)
+        _write_header_text(text_cell, vm, theme_color, align_center=True)
+        _add_circular_photo(photo_cell, photo, size=1.1)
+    else:
+        _write_header_text(document, vm, theme_color, align_center=True)
 
     rule = document.add_paragraph()
     rule.paragraph_format.space_before = Pt(6)
     rule.paragraph_format.space_after = Pt(4)
     _add_bottom_border(rule, theme_color, size=16)
 
-    # --- Summary --------------------------------------------------------
     if vm["summary"]:
-        add_section_heading("Summary")
+        _add_heading(document, "Summary", theme_color)
         document.add_paragraph(vm["summary"])
 
-    # --- Personal details (DOB / marital status only) ----------------------
     if vm["personal_rows"]:
-        add_section_heading("Personal Details")
-        add_label_value_rows(vm["personal_rows"])
+        _add_heading(document, "Personal Details", theme_color)
+        _add_label_value_rows(document, vm["personal_rows"])
 
-    # --- Passport details ------------------------------------------------
     if vm["passport_rows"]:
-        add_section_heading("Passport Details")
-        add_label_value_rows(vm["passport_rows"])
+        _add_heading(document, "Passport Details", theme_color)
+        _add_label_value_rows(document, vm["passport_rows"])
 
-    # --- Academic qualification --------------------------------------------
     if vm["education_rows"]:
-        add_section_heading("Academic Qualification")
-        headers = ["Award", "Institute", "Address", "Percentage/Grade", "Duration"]
-        table = document.add_table(rows=1, cols=len(headers))
-        table.autofit = True
-        header_row = table.rows[0]
-        for cell, header in zip(header_row.cells, headers):
-            _set_cell_background(cell, theme_color)
-            run = cell.paragraphs[0].add_run(header)
-            run.bold = True
-            run.font.size = Pt(9.5)
-            run.font.color.rgb = _rgb("#FFFFFF")
-        for edu in vm["education_rows"]:
-            row = table.add_row()
-            values = [
-                edu["degree"],
-                edu["institute"],
-                edu["address"],
-                edu["percentage_grade"],
-                edu["duration"],
-            ]
-            for cell, value in zip(row.cells, values):
-                run = cell.paragraphs[0].add_run(value)
-                run.font.size = Pt(9.5)
+        _add_heading(document, "Academic Qualification", theme_color)
+        _add_education_table(document, vm["education_rows"], theme_color)
 
-    # --- Work experience -------------------------------------------------
     if vm["experience_rows"]:
-        add_section_heading("Work Experience")
-        for exp in vm["experience_rows"]:
-            entry = document.add_paragraph()
-            entry.paragraph_format.space_after = Pt(0)
-            company_run = entry.add_run(exp["company"])
-            company_run.bold = True
+        _add_heading(document, "Work Experience", theme_color)
+        _add_experience_entries(document, vm["experience_rows"])
 
-            if exp["position"]:
-                position_p = document.add_paragraph()
-                position_p.paragraph_format.space_after = Pt(0)
-                position_run = position_p.add_run(exp["position"])
-                position_run.italic = True
+    if vm["languages_display"]:
+        _add_heading(document, "Languages", theme_color)
+        document.add_paragraph(vm["languages_display"])
 
-            if exp["tenure"]:
-                tenure_p = document.add_paragraph()
-                tenure_p.paragraph_format.space_after = Pt(2)
-                tenure_run = tenure_p.add_run(f"Tenure: {exp['tenure']}")
-                tenure_run.font.size = Pt(9)
-                tenure_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
-
-            for bullet in exp["responsibilities"]:
-                add_bullet(bullet)
-
-    # --- Skills -----------------------------------------------------------
     if vm["skills"]:
-        add_section_heading("Skills")
+        _add_heading(document, "Skills", theme_color)
         for line in vm["skills"].split("\n"):
             document.add_paragraph(line)
 
-    # --- References --------------------------------------------------------
     if vm["reference_rows"]:
-        add_section_heading("References")
-        for ref in vm["reference_rows"]:
-            entry = document.add_paragraph()
-            entry.paragraph_format.space_after = Pt(0)
-            name_run = entry.add_run(ref["name"])
-            name_run.bold = True
+        _add_heading(document, "References", theme_color)
+        _add_reference_entries(document, vm["reference_rows"])
 
-            role = " – ".join(part for part in (ref["position"], ref["company"]) if part)
-            if role:
-                role_p = document.add_paragraph()
-                role_p.paragraph_format.space_after = Pt(0)
-                role_p.add_run(role).italic = True
 
-            contact = "   |   ".join(part for part in (ref["phone"], ref["email"]) if part)
-            if contact:
-                contact_p = document.add_paragraph()
-                contact_p.paragraph_format.space_after = Pt(6)
-                contact_run = contact_p.add_run(contact)
-                contact_run.font.size = Pt(9)
-                contact_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+def _docx_modern(document, vm, theme_color):
+    white = "#FFFFFF"
+    sidebar_width = Inches(2.2)
+    main_width = Inches(4.8)
+
+    table = document.add_table(rows=1, cols=2)
+    table.autofit = False
+    sidebar_cell, main_cell = table.rows[0].cells
+    table.columns[0].width = sidebar_width
+    table.columns[1].width = main_width
+    sidebar_cell.width = sidebar_width
+    main_cell.width = main_width
+    _set_cell_background(sidebar_cell, theme_color)
+
+    def sidebar_line(text, size=9.5, bold=False):
+        p = sidebar_cell.add_paragraph()
+        p.paragraph_format.space_after = Pt(2)
+        run = p.add_run(text)
+        run.font.size = Pt(size)
+        run.font.bold = bold
+        run.font.color.rgb = _rgb(white)
+
+    if vm["photo"]:
+        photo_p = _add_circular_photo(sidebar_cell, vm["photo"], size=1.3)
+        if photo_p is not None:
+            photo_p.paragraph_format.space_after = Pt(8)
+
+    if vm["full_name"]:
+        name_p = sidebar_cell.add_paragraph()
+        name_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        name_p.paragraph_format.space_after = Pt(8)
+        name_run = name_p.add_run(vm["full_name"])
+        name_run.bold = True
+        name_run.font.size = Pt(14)
+        name_run.font.color.rgb = _rgb(white)
+
+    contact_lines = [line for line in (vm["phone"], vm["email"], vm["address"]) if line]
+    if contact_lines or vm["link_items"]:
+        _add_heading(sidebar_cell, "Contact", white, size=10)
+        for line in contact_lines:
+            sidebar_line(line)
+        for link in vm["link_items"]:
+            sidebar_line(link["text"])
+
+    if vm["education_rows"]:
+        _add_heading(sidebar_cell, "Education", white, size=10)
+        for edu in vm["education_rows"]:
+            if edu["degree"]:
+                sidebar_line(edu["degree"], bold=True)
+            if edu["institute"]:
+                sidebar_line(edu["institute"], size=9)
+            if edu["duration"]:
+                sidebar_line(edu["duration"], size=8.5)
+
+    if vm["skills"]:
+        _add_heading(sidebar_cell, "Skills", white, size=10)
+        for line in vm["skills"].split("\n"):
+            if line.strip():
+                sidebar_line(line.strip())
+
+    if vm["languages_display"]:
+        _add_heading(sidebar_cell, "Languages", white, size=10)
+        sidebar_line(vm["languages_display"])
+
+    if vm["summary"]:
+        _add_heading(main_cell, "Summary", theme_color)
+        main_cell.add_paragraph(vm["summary"])
+
+    if vm["experience_rows"]:
+        _add_heading(main_cell, "Experience", theme_color)
+        _add_experience_entries(main_cell, vm["experience_rows"])
+
+
+def _add_light_heading(container, text, color_hex, size=10.5):
+    heading = container.add_paragraph()
+    heading.paragraph_format.space_before = Pt(12)
+    heading.paragraph_format.space_after = Pt(6)
+    run = heading.add_run(text.upper())
+    run.font.size = Pt(size)
+    run.font.bold = False
+    run.font.color.rgb = _rgb(color_hex)
+    return heading
+
+
+def _docx_minimalist(document, vm, theme_color):
+    if vm["photo"]:
+        header_table = document.add_table(rows=1, cols=2)
+        header_table.autofit = False
+        photo_cell, text_cell = header_table.rows[0].cells
+        header_table.columns[0].width = Inches(1.0)
+        header_table.columns[1].width = Inches(6.0)
+        photo_cell.width = Inches(1.0)
+        text_cell.width = Inches(6.0)
+        _add_circular_photo(photo_cell, vm["photo"], size=0.8)
+        _write_header_text(text_cell, vm, theme_color, align_center=False)
+    else:
+        _write_header_text(document, vm, theme_color, align_center=False)
+
+    rule = document.add_paragraph()
+    rule.paragraph_format.space_before = Pt(4)
+    rule.paragraph_format.space_after = Pt(8)
+    _add_bottom_border(rule, "#DDDDDD", size=6)
+
+    if vm["summary"]:
+        _add_light_heading(document, "Summary", theme_color)
+        p = document.add_paragraph(vm["summary"])
+        p.paragraph_format.space_after = Pt(8)
+
+    if vm["experience_rows"]:
+        _add_light_heading(document, "Experience", theme_color)
+        _add_experience_entries(document, vm["experience_rows"])
+
+    if vm["education_rows"]:
+        _add_light_heading(document, "Education", theme_color)
+        for edu in vm["education_rows"]:
+            if edu["degree"]:
+                line = document.add_paragraph()
+                line.paragraph_format.space_after = Pt(0)
+                line.add_run(edu["degree"]).bold = True
+            if edu["institute"]:
+                sub = document.add_paragraph()
+                sub.paragraph_format.space_after = Pt(0)
+                sub.add_run(edu["institute"]).italic = True
+            if edu["duration"]:
+                dur = document.add_paragraph()
+                dur.paragraph_format.space_after = Pt(8)
+                dur_run = dur.add_run(edu["duration"])
+                dur_run.font.size = Pt(9)
+                dur_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+
+    if vm["languages_display"]:
+        _add_light_heading(document, "Languages", theme_color)
+        document.add_paragraph(vm["languages_display"])
+
+    if vm["skills"]:
+        _add_light_heading(document, "Skills", theme_color)
+        for line in vm["skills"].split("\n"):
+            document.add_paragraph(line)
+
+
+def _docx_academic(document, vm, theme_color):
+    normal = document.styles["Normal"]
+    normal.font.name = "Georgia"
+
+    _write_header_text(document, vm, theme_color, align_center=True)
+
+    rule = document.add_paragraph()
+    rule.paragraph_format.space_before = Pt(6)
+    rule.paragraph_format.space_after = Pt(6)
+    _add_bottom_border(rule, theme_color, size=12)
+
+    if vm["education_rows"]:
+        _add_heading(document, "Education", theme_color)
+        _add_education_table(document, vm["education_rows"], theme_color)
+
+    if vm["publication_rows"]:
+        _add_heading(document, "Publications", theme_color)
+        for pub in vm["publication_rows"]:
+            p = document.add_paragraph()
+            p.paragraph_format.space_after = Pt(4)
+            title_run = p.add_run(pub["title"])
+            title_run.italic = True
+            rest = ", ".join(part for part in (pub["venue"], pub["year"]) if part)
+            if rest:
+                p.add_run(f" — {rest}")
+
+    if vm["experience_rows"]:
+        _add_heading(document, "Research / Professional Experience", theme_color)
+        _add_experience_entries(document, vm["experience_rows"])
+
+    if vm["languages_display"]:
+        _add_heading(document, "Languages", theme_color)
+        document.add_paragraph(vm["languages_display"])
+
+    if vm["skills"]:
+        _add_heading(document, "Skills", theme_color)
+        for line in vm["skills"].split("\n"):
+            document.add_paragraph(line)
+
+
+DOCX_BUILDERS = {
+    "classic": _docx_classic,
+    "modern": _docx_modern,
+    "minimalist": _docx_minimalist,
+    "academic": _docx_academic,
+}
+
+
+def render_cv_docx(cv) -> bytes:
+    vm = build_cv_view_model(cv)
+    theme_color = vm["theme_color"]
+
+    document = Document()
+    _configure_document(document)
+
+    builder = DOCX_BUILDERS.get(vm["template"], _docx_classic)
+    builder(document, vm, theme_color)
 
     buffer = io.BytesIO()
     document.save(buffer)

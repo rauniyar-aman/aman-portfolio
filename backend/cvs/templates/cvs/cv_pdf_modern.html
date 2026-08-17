@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{ full_name }} — Curriculum Vitae</title>
+<style>
+    @page { size: A4; margin: 0; }
+
+    * { box-sizing: border-box; }
+
+    body {
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        font-size: 10pt;
+        line-height: 1.4;
+        color: #1a1a1a;
+        margin: 0;
+    }
+
+    .page {
+        display: flex;
+        min-height: 100vh;
+    }
+
+    .sidebar {
+        width: 30%;
+        background: {{ theme_color }};
+        color: #ffffff;
+        padding: 0.45in 0.3in;
+    }
+
+    .main {
+        width: 70%;
+        background: #ffffff;
+        padding: 0.45in 0.4in;
+    }
+
+    .sidebar-photo {
+        display: block;
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin: 0 auto 14px auto;
+        border: 3px solid rgba(255, 255, 255, 0.6);
+    }
+
+    .sidebar-name {
+        text-align: center;
+        font-size: 15pt;
+        font-weight: bold;
+        margin: 0 0 18px 0;
+        color: #ffffff;
+    }
+
+    h2.sidebar-heading {
+        font-size: 9.5pt;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #ffffff;
+        border-bottom: 1pt solid rgba(255, 255, 255, 0.45);
+        padding-bottom: 3px;
+        margin: 16px 0 6px 0;
+    }
+
+    h2.sidebar-heading:first-of-type {
+        margin-top: 0;
+    }
+
+    .sidebar p {
+        margin: 0 0 4px 0;
+        font-size: 9pt;
+        word-wrap: break-word;
+    }
+
+    .sidebar-edu-item {
+        margin-bottom: 8px;
+    }
+
+    .sidebar-edu-item .degree {
+        font-weight: bold;
+        font-size: 9pt;
+    }
+
+    .sidebar-edu-item .institute {
+        font-size: 8.5pt;
+    }
+
+    .sidebar-edu-item .duration {
+        font-size: 8pt;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    h2.section-heading {
+        font-size: 11pt;
+        font-weight: bold;
+        color: {{ theme_color }};
+        text-transform: uppercase;
+        border-bottom: 1.5pt solid {{ theme_color }};
+        padding-bottom: 2px;
+        margin: 0 0 6px 0;
+    }
+
+    .main h2.section-heading:not(:first-child) {
+        margin-top: 16px;
+    }
+
+    p.summary-text {
+        margin: 0;
+    }
+
+    .exp-entry {
+        margin-bottom: 10px;
+    }
+
+    .exp-entry:last-child {
+        margin-bottom: 0;
+    }
+
+    .exp-company {
+        font-weight: bold;
+    }
+
+    .exp-position {
+        font-style: italic;
+    }
+
+    .exp-tenure {
+        color: #666666;
+        font-size: 9pt;
+        margin: 1px 0 3px 0;
+    }
+
+    ul.bullets {
+        margin: 2px 0 0 0;
+        padding-left: 16px;
+    }
+
+    ul.bullets li {
+        margin-bottom: 2px;
+    }
+</style>
+</head>
+<body>
+    <div class="page">
+        <div class="sidebar">
+            {% if photo %}<img class="sidebar-photo" src="{{ photo }}">{% endif %}
+            {% if full_name %}<p class="sidebar-name">{{ full_name }}</p>{% endif %}
+
+            {% if phone or email or address or link_items %}
+            <h2 class="sidebar-heading">Contact</h2>
+            {% if phone %}<p>{{ phone }}</p>{% endif %}
+            {% if email %}<p>{{ email }}</p>{% endif %}
+            {% if address %}<p>{{ address }}</p>{% endif %}
+            {% for link in link_items %}<p>{{ link.text }}</p>{% endfor %}
+            {% endif %}
+
+            {% if education_rows %}
+            <h2 class="sidebar-heading">Education</h2>
+            {% for edu in education_rows %}
+            <div class="sidebar-edu-item">
+                {% if edu.degree %}<div class="degree">{{ edu.degree }}</div>{% endif %}
+                {% if edu.institute %}<div class="institute">{{ edu.institute }}</div>{% endif %}
+                {% if edu.duration %}<div class="duration">{{ edu.duration }}</div>{% endif %}
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% if skills %}
+            <h2 class="sidebar-heading">Skills</h2>
+            <p>{{ skills|linebreaksbr }}</p>
+            {% endif %}
+
+            {% if languages_display %}
+            <h2 class="sidebar-heading">Languages</h2>
+            <p>{{ languages_display }}</p>
+            {% endif %}
+        </div>
+
+        <div class="main">
+            {% if summary %}
+            <h2 class="section-heading">Summary</h2>
+            <p class="summary-text">{{ summary }}</p>
+            {% endif %}
+
+            {% if experience_rows %}
+            <h2 class="section-heading">Experience</h2>
+            {% for exp in experience_rows %}
+            <div class="exp-entry">
+                {% if exp.company %}<div class="exp-company">{{ exp.company }}</div>{% endif %}
+                {% if exp.position %}<div class="exp-position">{{ exp.position }}</div>{% endif %}
+                {% if exp.tenure %}<div class="exp-tenure">Tenure: {{ exp.tenure }}</div>{% endif %}
+                {% if exp.responsibilities %}
+                <ul class="bullets">
+                    {% for bullet in exp.responsibilities %}
+                    <li>{{ bullet }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

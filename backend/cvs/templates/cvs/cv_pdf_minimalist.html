@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{ full_name }} — Curriculum Vitae</title>
+<style>
+    @page { size: A4; margin: 0.7in; }
+
+    * { box-sizing: border-box; }
+
+    body {
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        font-size: 10pt;
+        font-weight: 300;
+        line-height: 1.6;
+        color: #333333;
+    }
+
+    .header-row.has-photo {
+        position: relative;
+        min-height: 56px;
+        padding-left: 72px;
+    }
+
+    .header-photo {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .name-line {
+        font-size: 20pt;
+        font-weight: 300;
+        letter-spacing: 1px;
+        color: {{ theme_color }};
+        margin: 0;
+    }
+
+    .header-line {
+        font-size: 9.5pt;
+        color: #777777;
+        margin: 4px 0 0 0;
+    }
+
+    .header-line .sep {
+        color: #bbbbbb;
+        margin: 0 6px;
+    }
+
+    .header-line a {
+        color: #777777;
+        text-decoration: none;
+    }
+
+    .thin-rule {
+        border: none;
+        border-top: 0.5pt solid #dddddd;
+        margin: 20px 0 22px 0;
+    }
+
+    h2.section-heading {
+        font-size: 9.5pt;
+        font-weight: 400;
+        letter-spacing: 1.5px;
+        color: {{ theme_color }};
+        text-transform: uppercase;
+        margin: 22px 0 10px 0;
+    }
+
+    h2.section-heading:first-of-type {
+        margin-top: 0;
+    }
+
+    p.summary-text {
+        margin: 0;
+    }
+
+    .exp-entry {
+        margin-bottom: 16px;
+    }
+
+    .exp-entry:last-child {
+        margin-bottom: 0;
+    }
+
+    .exp-company {
+        font-weight: 600;
+    }
+
+    .exp-position {
+        font-style: italic;
+        color: #555555;
+    }
+
+    .exp-tenure {
+        color: #999999;
+        font-size: 8.5pt;
+        margin: 2px 0 6px 0;
+    }
+
+    ul.bullets {
+        margin: 4px 0 0 0;
+        padding-left: 16px;
+    }
+
+    ul.bullets li {
+        margin-bottom: 4px;
+    }
+
+    .edu-entry {
+        margin-bottom: 12px;
+    }
+
+    .edu-entry:last-child {
+        margin-bottom: 0;
+    }
+
+    .edu-degree {
+        font-weight: 600;
+    }
+
+    .edu-institute {
+        font-style: italic;
+        color: #555555;
+    }
+
+    .edu-duration {
+        color: #999999;
+        font-size: 8.5pt;
+    }
+
+    p.skills-text,
+    p.languages-text {
+        margin: 0;
+    }
+</style>
+</head>
+<body>
+    <div class="header-row{% if photo %} has-photo{% endif %}">
+        {% if photo %}<img class="header-photo" src="{{ photo }}">{% endif %}
+        <div>
+            {% if full_name %}<p class="name-line">{{ full_name }}</p>{% endif %}
+            {% if phone or email or address %}
+            <p class="header-line">
+                {% if phone %}{{ phone }}{% endif %}{% if phone and email %}<span class="sep">|</span>{% endif %}{% if email %}<a href="mailto:{{ email }}">{{ email }}</a>{% endif %}{% if address and phone or address and email %}<span class="sep">|</span>{% endif %}{% if address %}{{ address }}{% endif %}
+            </p>
+            {% endif %}
+        </div>
+    </div>
+    <hr class="thin-rule">
+
+    {% if summary %}
+    <h2 class="section-heading">Summary</h2>
+    <p class="summary-text">{{ summary }}</p>
+    {% endif %}
+
+    {% if experience_rows %}
+    <h2 class="section-heading">Experience</h2>
+    {% for exp in experience_rows %}
+    <div class="exp-entry">
+        {% if exp.company %}<div class="exp-company">{{ exp.company }}</div>{% endif %}
+        {% if exp.position %}<div class="exp-position">{{ exp.position }}</div>{% endif %}
+        {% if exp.tenure %}<div class="exp-tenure">{{ exp.tenure }}</div>{% endif %}
+        {% if exp.responsibilities %}
+        <ul class="bullets">
+            {% for bullet in exp.responsibilities %}
+            <li>{{ bullet }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if education_rows %}
+    <h2 class="section-heading">Education</h2>
+    {% for edu in education_rows %}
+    <div class="edu-entry">
+        {% if edu.degree %}<div class="edu-degree">{{ edu.degree }}</div>{% endif %}
+        {% if edu.institute %}<div class="edu-institute">{{ edu.institute }}</div>{% endif %}
+        {% if edu.duration %}<div class="edu-duration">{{ edu.duration }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if languages_display %}
+    <h2 class="section-heading">Languages</h2>
+    <p class="languages-text">{{ languages_display }}</p>
+    {% endif %}
+
+    {% if skills %}
+    <h2 class="section-heading">Skills</h2>
+    <p class="skills-text">{{ skills|linebreaksbr }}</p>
+    {% endif %}
+</body>
+</html>

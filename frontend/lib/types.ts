@@ -4,6 +4,32 @@ export const DEFAULT_COUNTRY = "Nepal";
 export const DEFAULT_PHONE_COUNTRY_CODE = "+977";
 export const MARITAL_STATUS_OPTIONS = ["Single", "Married"];
 
+export type CVTemplate = "classic" | "modern" | "minimalist" | "academic";
+export const DEFAULT_TEMPLATE: CVTemplate = "classic";
+
+export const TEMPLATE_OPTIONS: { value: CVTemplate; label: string; description: string }[] = [
+  {
+    value: "classic",
+    label: "Classic",
+    description: "Detailed format for visa, university, and formal applications",
+  },
+  {
+    value: "modern",
+    label: "Modern",
+    description: "Clean two-column layout for corporate and tech roles",
+  },
+  {
+    value: "minimalist",
+    label: "Minimalist",
+    description: "Simple, essentials-only format for quick applications",
+  },
+  {
+    value: "academic",
+    label: "Academic",
+    description: "Education and publications-focused, for research roles",
+  },
+];
+
 export interface Passport {
   number: string;
   issued_by: string;
@@ -41,6 +67,12 @@ export interface ReferenceItem {
   email: string;
 }
 
+export interface PublicationItem {
+  title: string;
+  venue: string;
+  year: string;
+}
+
 export interface CVContent {
   full_name: string;
   email: string;
@@ -58,6 +90,10 @@ export interface CVContent {
   skills: string; // free text — user writes it however they like
   references: ReferenceItem[]; // optional — omitted entirely from the CV if empty
   theme_color: string;
+  template: CVTemplate;
+  photo: string; // base64 data URI, optional — "" if not set
+  languages: string[]; // just names, e.g. ["English", "Spanish"]
+  publications: PublicationItem[]; // optional — used by the academic template
 }
 
 export interface CV {
@@ -88,6 +124,12 @@ export const emptyReference = (): ReferenceItem => ({
   email: "",
 });
 
+export const emptyPublication = (): PublicationItem => ({
+  title: "",
+  venue: "",
+  year: "",
+});
+
 export const emptyCVContent = (): CVContent => ({
   full_name: "",
   email: "",
@@ -105,6 +147,10 @@ export const emptyCVContent = (): CVContent => ({
   skills: "",
   references: [],
   theme_color: DEFAULT_THEME_COLOR,
+  template: DEFAULT_TEMPLATE,
+  photo: "",
+  languages: [],
+  publications: [],
 });
 
 /**
@@ -131,6 +177,20 @@ export function normalizeCVContent(raw: unknown): CVContent {
       ? rawSkills
       : base.skills;
 
+  const validTemplates = TEMPLATE_OPTIONS.map((t) => t.value);
+  const template =
+    typeof data.template === "string" && (validTemplates as string[]).includes(data.template)
+      ? (data.template as CVTemplate)
+      : base.template;
+
+  const languages = Array.isArray(data.languages)
+    ? data.languages.filter((l): l is string => typeof l === "string" && l.trim().length > 0)
+    : base.languages;
+
+  const publications = Array.isArray(data.publications)
+    ? data.publications.map((p) => ({ ...emptyPublication(), ...((p as Partial<PublicationItem>) ?? {}) }))
+    : base.publications;
+
   return {
     ...base,
     ...data,
@@ -144,5 +204,9 @@ export function normalizeCVContent(raw: unknown): CVContent {
     passport: { ...emptyPassport(), ...((data.passport as Partial<Passport>) ?? {}) },
     address,
     skills,
+    template,
+    photo: typeof data.photo === "string" ? data.photo : base.photo,
+    languages,
+    publications,
   } as CVContent;
 }

@@ -4,14 +4,34 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { apiDownload, apiPost, apiPut, ApiError, previewBlob, triggerBlobDownload } from "@/lib/api";
-import type { Address, CV, CVContent, EducationItem, ExperienceItem, Passport, ReferenceItem } from "@/lib/types";
-import { emptyAddress, emptyCVContent, emptyPassport, emptyReference, MARITAL_STATUS_OPTIONS } from "@/lib/types";
+import type {
+  Address,
+  CV,
+  CVContent,
+  EducationItem,
+  ExperienceItem,
+  Passport,
+  PublicationItem,
+  ReferenceItem,
+} from "@/lib/types";
+import {
+  emptyAddress,
+  emptyCVContent,
+  emptyPassport,
+  emptyPublication,
+  emptyReference,
+  MARITAL_STATUS_OPTIONS,
+} from "@/lib/types";
 import { COUNTRIES } from "@/lib/countries";
 import { COUNTRY_CODES, getCallingCodeForCountry } from "@/lib/countryCodes";
 import { NATIONALITIES } from "@/lib/nationalities";
+import CVPreviewPanel from "@/components/cv-preview/CVPreviewPanel";
 import DateInput from "@/components/DateInput";
+import LanguagesInput from "@/components/LanguagesInput";
 import LinksEditor from "@/components/LinksEditor";
 import MonthYearInput from "@/components/MonthYearInput";
+import PhotoUpload from "@/components/PhotoUpload";
+import TemplateStylePicker from "@/components/TemplateStylePicker";
 import ThemeColorPicker from "@/components/ThemeColorPicker";
 
 interface CVFormProps {
@@ -211,6 +231,30 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
     }));
   }
 
+  function updatePublication<K extends keyof PublicationItem>(
+    index: number,
+    field: K,
+    value: PublicationItem[K]
+  ) {
+    setContent((prev) => ({
+      ...prev,
+      publications: prev.publications.map((item, i) =>
+        i === index ? { ...item, [field]: value } : item
+      ),
+    }));
+  }
+
+  function addPublication() {
+    setContent((prev) => ({ ...prev, publications: [...prev.publications, emptyPublication()] }));
+  }
+
+  function removePublication(index: number) {
+    setContent((prev) => ({
+      ...prev,
+      publications: prev.publications.filter((_, i) => i !== index),
+    }));
+  }
+
   async function handleSave() {
     setSaving(true);
     setError(null);
@@ -357,7 +401,9 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
   const address = content.address ?? emptyAddress();
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-6xl px-4 py-8">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="max-w-3xl">
       <Link
         href="/cv-maker/dashboard"
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground"
@@ -379,6 +425,17 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
           className={inputClass}
         />
       </div>
+
+      <Section title="Photo">
+        <PhotoUpload value={content.photo} onChange={(photo) => updateField("photo", photo)} />
+      </Section>
+
+      <Section title="Template style">
+        <TemplateStylePicker
+          value={content.template}
+          onChange={(template) => updateField("template", template)}
+        />
+      </Section>
 
       <Section title="Theme color">
         <ThemeColorPicker
@@ -761,6 +818,72 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
         />
       </Section>
 
+      <Section title="Languages">
+        <LanguagesInput
+          value={content.languages}
+          onChange={(languages) => updateField("languages", languages)}
+        />
+      </Section>
+
+      {content.template === "academic" && (
+        <Section
+          title="Publications"
+          action={<AddButton onClick={addPublication} label="Add publication" />}
+        >
+          <div className="space-y-6">
+            <p className="text-sm text-muted">
+              Shown on the Academic template only — optional otherwise.
+            </p>
+            {content.publications.map((item, index) => (
+              <div key={index} className="rounded-md border border-border p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-xs font-medium uppercase tracking-wide text-muted">
+                    Publication {index + 1}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removePublication(index)}
+                    className="text-xs text-red-700 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                  >
+                    Remove
+                  </button>
+                </div>
+
+                <Field label="Title">
+                  <input
+                    type="text"
+                    value={item.title}
+                    onChange={(e) => updatePublication(index, "title", e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Venue">
+                    <input
+                      type="text"
+                      value={item.venue}
+                      onChange={(e) => updatePublication(index, "venue", e.target.value)}
+                      className={inputClass}
+                    />
+                  </Field>
+                  <Field label="Year">
+                    <input
+                      type="text"
+                      value={item.year}
+                      onChange={(e) => updatePublication(index, "year", e.target.value)}
+                      className={inputClass}
+                    />
+                  </Field>
+                </div>
+              </div>
+            ))}
+            {content.publications.length === 0 && (
+              <p className="text-sm text-muted">No publications added yet.</p>
+            )}
+          </div>
+        </Section>
+      )}
+
       <Section
         title="References"
         action={<AddButton onClick={addReference} label="Add reference" />}
@@ -877,6 +1000,14 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
         )}
 
         {justSaved && <span className="text-sm text-muted">Saved ✓ — preview it before you download.</span>}
+      </div>
+      </div>
+
+      <div className="hidden lg:block">
+        <div className="sticky top-8">
+          <CVPreviewPanel content={content} />
+        </div>
+      </div>
       </div>
     </div>
   );

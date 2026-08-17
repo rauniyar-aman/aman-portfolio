@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>{{ full_name }} — Curriculum Vitae</title>
+<style>
+    @page { size: A4; margin: 0.6in; }
+
+    * { box-sizing: border-box; }
+
+    body {
+        font-family: "Georgia", "Times New Roman", serif;
+        font-size: 10pt;
+        line-height: 1.45;
+        color: #1a1a1a;
+    }
+
+    .name-line {
+        text-align: center;
+        font-size: 19pt;
+        font-weight: bold;
+        color: {{ theme_color }};
+        margin: 0;
+    }
+
+    .header-line {
+        text-align: center;
+        font-size: 9.5pt;
+        color: #555555;
+        margin: 4px 0 0 0;
+    }
+
+    .header-line .sep {
+        color: #999999;
+        margin: 0 6px;
+    }
+
+    .header-line a {
+        color: {{ theme_color }};
+    }
+
+    .title-rule {
+        border: none;
+        border-top: 1pt solid {{ theme_color }};
+        margin: 10px 0 16px 0;
+    }
+
+    h2.section-heading {
+        font-size: 12pt;
+        font-weight: bold;
+        color: {{ theme_color }};
+        border-bottom: 1pt solid {{ theme_color }};
+        padding-bottom: 3px;
+        margin: 16px 0 8px 0;
+    }
+
+    h2.section-heading:first-of-type {
+        margin-top: 0;
+    }
+
+    table.edu-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 4px;
+    }
+
+    table.edu-table th {
+        background: {{ theme_color }};
+        color: #ffffff;
+        font-size: 9.5pt;
+        font-weight: bold;
+        text-align: left;
+        padding: 5px 7px;
+    }
+
+    table.edu-table td {
+        font-size: 9.5pt;
+        padding: 5px 7px;
+        border-bottom: 0.5pt solid #cccccc;
+        vertical-align: top;
+    }
+
+    ul.pub-list {
+        margin: 0;
+        padding-left: 18px;
+    }
+
+    ul.pub-list li {
+        margin-bottom: 6px;
+    }
+
+    .pub-title {
+        font-style: italic;
+    }
+
+    .exp-entry {
+        margin-bottom: 10px;
+    }
+
+    .exp-entry:last-child {
+        margin-bottom: 0;
+    }
+
+    .exp-company {
+        font-weight: bold;
+    }
+
+    .exp-position {
+        font-style: italic;
+    }
+
+    .exp-tenure {
+        color: #666666;
+        font-size: 9pt;
+        margin: 1px 0 3px 0;
+    }
+
+    ul.bullets {
+        margin: 2px 0 0 0;
+        padding-left: 16px;
+    }
+
+    ul.bullets li {
+        margin-bottom: 2px;
+    }
+
+    p.skills-text,
+    p.languages-text {
+        margin: 0;
+    }
+</style>
+</head>
+<body>
+    {% if full_name %}<p class="name-line">{{ full_name }}</p>{% endif %}
+    {% if phone or email or address %}
+    <p class="header-line">
+        {% if phone %}{{ phone }}{% endif %}{% if phone and email %}<span class="sep">|</span>{% endif %}{% if email %}<a href="mailto:{{ email }}">{{ email }}</a>{% endif %}{% if address and phone or address and email %}<span class="sep">|</span>{% endif %}{% if address %}{{ address }}{% endif %}
+    </p>
+    {% endif %}
+    {% if link_items %}
+    <p class="header-line">
+        {% for link in link_items %}<a href="{{ link.href }}">{{ link.text }}</a>{% if not forloop.last %}<span class="sep">|</span>{% endif %}{% endfor %}
+    </p>
+    {% endif %}
+    <hr class="title-rule">
+
+    {% if education_rows %}
+    <h2 class="section-heading">Education</h2>
+    <table class="edu-table">
+        <thead>
+            <tr>
+                <th>Award</th>
+                <th>Institute</th>
+                <th>Address</th>
+                <th>Percentage/Grade</th>
+                <th>Duration</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for edu in education_rows %}
+            <tr>
+                <td>{{ edu.degree }}</td>
+                <td>{{ edu.institute }}</td>
+                <td>{{ edu.address }}</td>
+                <td>{{ edu.percentage_grade }}</td>
+                <td>{{ edu.duration }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if publication_rows %}
+    <h2 class="section-heading">Publications</h2>
+    <ul class="pub-list">
+        {% for pub in publication_rows %}
+        <li>
+            <span class="pub-title">{{ pub.title }}</span>{% if pub.venue %}, {{ pub.venue }}{% endif %}{% if pub.year %} ({{ pub.year }}){% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if experience_rows %}
+    <h2 class="section-heading">Research / Professional Experience</h2>
+    {% for exp in experience_rows %}
+    <div class="exp-entry">
+        {% if exp.company %}<div class="exp-company">{{ exp.company }}</div>{% endif %}
+        {% if exp.position %}<div class="exp-position">{{ exp.position }}</div>{% endif %}
+        {% if exp.tenure %}<div class="exp-tenure">Tenure: {{ exp.tenure }}</div>{% endif %}
+        {% if exp.responsibilities %}
+        <ul class="bullets">
+            {% for bullet in exp.responsibilities %}
+            <li>{{ bullet }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    {% if languages_display %}
+    <h2 class="section-heading">Languages</h2>
+    <p class="languages-text">{{ languages_display }}</p>
+    {% endif %}
+
+    {% if skills %}
+    <h2 class="section-heading">Skills</h2>
+    <p class="skills-text">{{ skills|linebreaksbr }}</p>
+    {% endif %}
+</body>
+</html>
