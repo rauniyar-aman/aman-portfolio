@@ -39,6 +39,7 @@ import CVPreviewPanel from "@/components/cv-preview/CVPreviewPanel";
 import DateInput, { MONTH_ABBR } from "@/components/DateInput";
 import LinksEditor from "@/components/LinksEditor";
 import MonthYearInput from "@/components/MonthYearInput";
+import PassportPreviewPanel from "@/components/PassportPreviewPanel";
 import PassportScanner, { PassportScanResult } from "@/components/PassportScanner";
 import PhotoUpload from "@/components/PhotoUpload";
 import PurposeSelector from "@/components/PurposeSelector";
@@ -596,11 +597,23 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
   const address = content.address ?? emptyAddress();
   const physicalDetails = content.physical_details ?? emptyPhysicalDetails();
   const emergencyContact = content.emergency_contact ?? emptyEmergencyContact();
+  const hasPassportScan = Boolean(passport.scan_image || passport.scan_image_address);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
-      <div className="max-w-3xl">
+      <div
+        className={`grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_380px] ${
+          hasPassportScan ? "xl:grid-cols-[320px_minmax(0,1fr)_380px]" : ""
+        }`}
+      >
+      {hasPassportScan && (
+        <div className="hidden xl:block">
+          <div className="sticky top-20">
+            <PassportPreviewPanel bioImage={passport.scan_image} addressImage={passport.scan_image_address} />
+          </div>
+        </div>
+      )}
+      <div>
       <Link
         href="/cv-maker/dashboard"
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-foreground"
@@ -622,6 +635,28 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
           className={inputClass}
         />
       </div>
+
+      <Section title="Passport Scanner (optional)">
+        <p className="mb-3 text-sm text-muted">
+          Upload a photo of your passport to auto-fill your details.
+        </p>
+        <PassportScanner
+          bioImage={passport.scan_image}
+          addressImage={passport.scan_image_address}
+          onImagesChange={handlePassportImagesChange}
+          onScanResult={handlePassportScanResult}
+        />
+      </Section>
+
+      {hasPassportScan && (
+        <div className="mb-8 xl:hidden">
+          <PassportPreviewPanel
+            bioImage={passport.scan_image}
+            addressImage={passport.scan_image_address}
+            sticky={false}
+          />
+        </div>
+      )}
 
       <Section title="What is this CV for?">
         <PurposeSelector value={content.purpose} onChange={handlePurposeChange} />
@@ -717,7 +752,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
           onChange={(e) => updateField("summary", e.target.value)}
           rows={4}
           placeholder="Write your own summary, or fill in your education and experience below, then click 'Enhance with AI' to generate one for you."
-          className={`${inputClass} text-justify`}
+          className={`${inputClass} max-w-3xl text-justify`}
         />
         {summaryEnhanceError && (
           <p className="mt-1.5 text-xs text-red-700 dark:text-red-400">{summaryEnhanceError}</p>
@@ -726,18 +761,6 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
           AI-generated content should be reviewed for accuracy before submission, especially for
           visa or university applications.
         </p>
-      </Section>
-
-      <Section title="Passport Scanner (optional)">
-        <p className="mb-3 text-sm text-muted">
-          Upload a photo of your passport to auto-fill your details.
-        </p>
-        <PassportScanner
-          bioImage={passport.scan_image}
-          addressImage={passport.scan_image_address}
-          onImagesChange={handlePassportImagesChange}
-          onScanResult={handlePassportScanResult}
-        />
       </Section>
 
       <CollapsibleSection title="Additional Details (optional)" forceOpen={scanActive}>
@@ -1202,7 +1225,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
           onChange={(e) => updateField("skills", e.target.value)}
           rows={4}
           placeholder="Write your skills however you like — one per line, comma-separated, or as a short paragraph."
-          className={inputClass}
+          className={`${inputClass} max-w-3xl`}
         />
         {skillsEnhanceError && (
           <p className="mt-1.5 text-xs text-red-700 dark:text-red-400">{skillsEnhanceError}</p>
