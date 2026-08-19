@@ -1,0 +1,36 @@
+/*
+Brand the default Django admin with the same maroon/pink palette already
+used in the transactional emails (see accounts/templates/emails/).
+
+Deliberately scoped to header/breadcrumbs/button colors only, not links or
+body backgrounds — Django's own dark_mode.css never redefines those first
+group of variables for dark mode, so overriding them once in a plain
+:root block applies correctly and safely in both light and dark admin
+themes. Link colors ARE redefined by dark_mode.css for contrast against
+its dark background, and dark_mode.css loads before this file, so
+overriding link-fg here would win the cascade in dark mode too and
+could produce a low-contrast maroon-on-near-black link — left alone
+on purpose.
+*/
+html[data-theme="light"],
+:root {
+    --primary: #4B1528;
+    --secondary: #4B1528;
+    --accent: #E0929A;
+
+    --header-color: #fff;
+    --header-branding-color: var(--accent);
+    --header-bg: var(--secondary);
+    --header-link-color: #fff;
+
+    --breadcrumbs-fg: #E0929A;
+    --breadcrumbs-bg: #4B1528;
+
+    --button-bg: var(--secondary);
+    --button-hover-bg: #6B2038;
+    --default-button-bg: #6B2038;
+    --default-button-hover-bg: var(--secondary);
+
+    --object-tools-bg: #6B2038;
+    --object-tools-hover-bg: #4B1528;
+}

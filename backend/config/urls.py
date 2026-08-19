@@ -4,6 +4,10 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 from accounts.views import UsernameTokenObtainPairView
 
+admin.site.site_header = "CV Maker Administration"
+admin.site.site_title = "CV Maker Admin"
+admin.site.index_title = "Administration"
+
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/auth/token/", UsernameTokenObtainPairView.as_view(), name="token_obtain_pair"),
