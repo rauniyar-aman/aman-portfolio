@@ -482,7 +482,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
                 type="text"
                 value={content.phone}
                 onChange={(e) => updateField("phone", e.target.value)}
-                className={inputClass}
+                className={`${inputClass} min-w-0 flex-1`}
               />
             </div>
           </Field>
