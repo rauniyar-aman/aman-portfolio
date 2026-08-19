@@ -26,13 +26,28 @@ import { COUNTRIES } from "@/lib/countries";
 import { COUNTRY_CODES, getCallingCodeForCountry } from "@/lib/countryCodes";
 import { NATIONALITIES } from "@/lib/nationalities";
 import CVPreviewPanel from "@/components/cv-preview/CVPreviewPanel";
-import DateInput from "@/components/DateInput";
+import DateInput, { MONTH_ABBR } from "@/components/DateInput";
 import LanguagesInput from "@/components/LanguagesInput";
 import LinksEditor from "@/components/LinksEditor";
 import MonthYearInput from "@/components/MonthYearInput";
+import PassportScanner, { PassportScanResult } from "@/components/PassportScanner";
 import PhotoUpload from "@/components/PhotoUpload";
 import TemplateStylePicker from "@/components/TemplateStylePicker";
 import ThemeColorPicker from "@/components/ThemeColorPicker";
+
+// AI passport scan dates come back as "DD MMM YYYY" (e.g. "05 Jan 1998");
+// convert to the native <input type="date"> format and to this form's
+// "DD/Mmm/YYYY" passport-date convention (see DateInput.tsx).
+function parseScanDate(ddMmmYyyy: string): { iso: string; slash: string } {
+  const match = /^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})$/.exec(ddMmmYyyy.trim());
+  if (!match) return { iso: "", slash: "" };
+  const [, dd, mmmRaw, yyyy] = match;
+  const monthIndex = MONTH_ABBR.findIndex((m) => m.toLowerCase() === mmmRaw.toLowerCase());
+  if (monthIndex === -1) return { iso: "", slash: "" };
+  const ddPadded = dd.padStart(2, "0");
+  const mm = String(monthIndex + 1).padStart(2, "0");
+  return { iso: `${yyyy}-${mm}-${ddPadded}`, slash: `${ddPadded}/${MONTH_ABBR[monthIndex]}/${yyyy}` };
+}
 
 interface CVFormProps {
   mode: "create" | "edit";
@@ -65,6 +80,11 @@ function emptyEducation(): EducationItem {
 const inputClass =
   "w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-accent-text focus:outline-none";
 
+// Applied to fields a passport scan just filled in, while they still need
+// the user's explicit confirmation against their physical passport.
+const warningInputClass =
+  "w-full rounded-md border-2 border-amber-500 bg-amber-50 px-3 py-2 text-sm text-foreground placeholder:text-muted focus:border-accent-text focus:outline-none dark:bg-amber-950/30";
+
 export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVFormProps) {
   const router = useRouter();
   const [title, setTitle] = useState(initialTitle ?? "");
@@ -81,6 +101,16 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
   const [enhancingSkills, setEnhancingSkills] = useState(false);
   const [skillsEnhanceError, setSkillsEnhanceError] = useState<string | null>(null);
   const [skillsEnhanceNotice, setSkillsEnhanceNotice] = useState<string | null>(null);
+  // Whether a passport scan has ever populated fields in this session, and
+  // whether the user has since confirmed them against their physical
+  // passport — resets to unverified on every new scan or edit of a
+  // scan-affected field, per the verification safeguard.
+  const [scanActive, setScanActive] = useState(false);
+  const [scanVerified, setScanVerified] = useState(false);
+  const [scanConfidence, setScanConfidence] = useState<{
+    mrzRead: boolean;
+    checksumsValid: boolean;
+  } | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<"pdf" | "docx" | null>(null);
 
@@ -92,6 +122,8 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
   const hasEducationOrExperienceContent =
     content.education.some((e) => e.institute.trim() || e.degree.trim()) ||
     content.experience.some((e) => e.company.trim() || e.position.trim());
+
+  const needsScanVerification = scanActive && !scanVerified;
 
   const initialSnapshotRef = useRef(
     JSON.stringify({ title: initialTitle ?? "", content: initialContent ?? emptyCVContent() })
@@ -155,6 +187,60 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
       ...prev,
       address: { ...(prev.address ?? emptyAddress()), [field]: value },
     }));
+  }
+
+  // Editing a field that a passport scan filled in (Name, DOB, Address, or
+  // any Passport Details field) means the user is actively reviewing it —
+  // drop back to "needs verification" until they explicitly re-confirm.
+  function resetScanVerification() {
+    setScanVerified(false);
+  }
+
+  function updateFieldVerified<K extends keyof CVContent>(field: K, value: CVContent[K]) {
+    updateField(field, value);
+    resetScanVerification();
+  }
+
+  function updatePassportVerified(field: keyof Passport, value: string) {
+    updatePassport(field, value);
+    resetScanVerification();
+  }
+
+  function updateAddressDetailVerified(value: string) {
+    updateAddress("detail", value);
+    resetScanVerification();
+  }
+
+  function handlePassportImagesChange(bioImage: string, addressImage: string) {
+    setContent((prev) => ({
+      ...prev,
+      passport: { ...(prev.passport ?? emptyPassport()), scan_image: bioImage, scan_image_address: addressImage },
+    }));
+  }
+
+  function handlePassportScanResult(result: PassportScanResult) {
+    const dob = parseScanDate(result.dob);
+    const expiry = parseScanDate(result.expiry_date);
+
+    setContent((prev) => ({
+      ...prev,
+      full_name: result.full_name || prev.full_name,
+      dob: dob.iso || prev.dob,
+      nationality: result.nationality || prev.nationality,
+      passport: {
+        ...(prev.passport ?? emptyPassport()),
+        number: result.passport_number || prev.passport.number,
+        issued_by: result.issuing_country || prev.passport.issued_by,
+        expiry_date: expiry.slash || prev.passport.expiry_date,
+      },
+      address: result.permanent_address
+        ? { ...(prev.address ?? emptyAddress()), detail: result.permanent_address }
+        : prev.address,
+    }));
+
+    setScanActive(true);
+    setScanVerified(false);
+    setScanConfidence({ mrzRead: result.mrz_read, checksumsValid: result.checksums_valid });
   }
 
   // Defaults the phone country code to match the selected address country —
@@ -498,8 +584,8 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
             <input
               type="text"
               value={content.full_name}
-              onChange={(e) => updateField("full_name", e.target.value)}
-              className={inputClass}
+              onChange={(e) => updateFieldVerified("full_name", e.target.value)}
+              className={needsScanVerification ? warningInputClass : inputClass}
             />
           </Field>
           <Field label="Email">
@@ -571,14 +657,14 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
         </p>
       </Section>
 
-      <CollapsibleSection title="Additional Details (optional)">
+      <CollapsibleSection title="Additional Details (optional)" forceOpen={scanActive}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Date of Birth">
             <input
               type="date"
               value={content.dob}
-              onChange={(e) => updateField("dob", e.target.value)}
-              className={inputClass}
+              onChange={(e) => updateFieldVerified("dob", e.target.value)}
+              className={needsScanVerification ? warningInputClass : inputClass}
             />
           </Field>
           <Field label="Nationality">
@@ -616,12 +702,21 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
           </Field>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_200px]">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-[1fr_140px_160px]">
           <Field label="Permanent Address">
             <textarea
               value={address.detail}
-              onChange={(e) => updateAddress("detail", e.target.value)}
+              onChange={(e) => updateAddressDetailVerified(e.target.value)}
               rows={2}
+              className={needsScanVerification && address.detail.trim() ? warningInputClass : inputClass}
+            />
+          </Field>
+          <Field label="Postcode">
+            <input
+              type="text"
+              value={address.postcode}
+              onChange={(e) => updateAddress("postcode", e.target.value)}
+              placeholder="Entered manually"
               className={inputClass}
             />
           </Field>
@@ -643,12 +738,26 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
         <p className="mb-2 mt-4 text-xs font-medium uppercase tracking-wide text-muted">
           Passport details
         </p>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+        <PassportScanner
+          bioImage={passport.scan_image}
+          addressImage={passport.scan_image_address}
+          onImagesChange={handlePassportImagesChange}
+          onScanResult={handlePassportScanResult}
+        />
+
+        <div
+          className={
+            needsScanVerification
+              ? "grid grid-cols-1 gap-4 rounded-md border-2 border-amber-500 bg-amber-50 p-3 sm:grid-cols-2 dark:bg-amber-950/30"
+              : "grid grid-cols-1 gap-4 sm:grid-cols-2"
+          }
+        >
           <Field label="Passport Number">
             <input
               type="text"
               value={passport.number}
-              onChange={(e) => updatePassport("number", e.target.value)}
+              onChange={(e) => updatePassportVerified("number", e.target.value)}
               className={inputClass}
             />
           </Field>
@@ -656,25 +765,46 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
             <input
               type="text"
               value={passport.issued_by}
-              onChange={(e) => updatePassport("issued_by", e.target.value)}
+              onChange={(e) => updatePassportVerified("issued_by", e.target.value)}
               className={inputClass}
             />
           </Field>
           <Field label="Issued Date">
             <DateInput
               value={passport.issued_date}
-              onChange={(value) => updatePassport("issued_date", value)}
+              onChange={(value) => updatePassportVerified("issued_date", value)}
               className={inputClass}
             />
           </Field>
           <Field label="Expiry Date">
             <DateInput
               value={passport.expiry_date}
-              onChange={(value) => updatePassport("expiry_date", value)}
+              onChange={(value) => updatePassportVerified("expiry_date", value)}
               className={inputClass}
             />
           </Field>
         </div>
+
+        {scanActive && (
+          <div className="mt-3">
+            <label className="flex items-start gap-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                checked={scanVerified}
+                onChange={(e) => setScanVerified(e.target.checked)}
+                className="mt-0.5"
+              />
+              I have reviewed and confirmed these details match my passport
+            </label>
+            {!scanVerified && (
+              <p className="mt-1.5 text-xs text-amber-700 dark:text-amber-400">
+                {scanConfidence && (!scanConfidence.mrzRead || !scanConfidence.checksumsValid)
+                  ? "Could not fully verify this scan — please double-check all fields carefully."
+                  : "Please compare these fields against your physical passport before saving — AI extraction can occasionally misread characters, especially on worn or low-quality scans."}
+              </p>
+            )}
+          </div>
+        )}
       </CollapsibleSection>
 
       <Section
@@ -1125,11 +1255,20 @@ function Section({
 function CollapsibleSection({
   title,
   children,
+  forceOpen,
 }: {
   title: string;
   children: React.ReactNode;
+  forceOpen?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+
+  // Nudge the section open once when forceOpen turns true (e.g. a passport
+  // scan just filled in fields that live inside it) — the user can still
+  // collapse it again afterward.
+  useEffect(() => {
+    if (forceOpen) setOpen(true);
+  }, [forceOpen]);
 
   return (
     <div className="mb-8 rounded-md border border-border">

@@ -4,7 +4,7 @@
 // presenting a native browser date picker, which works in "yyyy-MM-dd"
 // values — this component converts between the two.
 
-const MONTH_ABBR = [
+export const MONTH_ABBR = [
   "Jan",
   "Feb",
   "Mar",

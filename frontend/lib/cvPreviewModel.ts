@@ -78,7 +78,9 @@ export function buildCVPreviewModel(content: CVContent): CVPreviewModel {
 
   const phone = content.phone ? `${content.phone_country_code} ${content.phone}`.trim() : "";
 
-  const address = [content.address?.detail, content.address?.country].filter(Boolean).join(", ");
+  const address = [content.address?.detail, content.address?.postcode, content.address?.country]
+    .filter(Boolean)
+    .join(", ");
 
   const personalRows = rows([
     ["Date of Birth", content.dob],

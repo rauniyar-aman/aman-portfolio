@@ -70,13 +70,22 @@ def build_cv_view_model(cv) -> dict:
     raw_skills = content.get("skills") or ""
     skills = "\n".join(s for s in raw_skills if s) if isinstance(raw_skills, list) else raw_skills
 
-    # Address used to be a plain string; it's now {detail, country} so the
-    # country can be a dropdown. Older CVs may still have the plain-string
-    # shape, so normalize both into one display string.
+    # Address used to be a plain string; it's now {detail, postcode, country}
+    # so the country can be a dropdown and the postcode (never guessed by
+    # the passport scanner — entered manually) its own field. Older CVs may
+    # still have the plain-string shape, so normalize both into one display
+    # string; the postcode segment is simply omitted when blank, never
+    # rendered as an empty/placeholder slot.
     raw_address = content.get("address") or ""
     if isinstance(raw_address, dict):
         address = ", ".join(
-            part for part in (raw_address.get("detail", ""), raw_address.get("country", "")) if part
+            part
+            for part in (
+                raw_address.get("detail", ""),
+                raw_address.get("postcode", ""),
+                raw_address.get("country", ""),
+            )
+            if part
         )
     else:
         address = raw_address

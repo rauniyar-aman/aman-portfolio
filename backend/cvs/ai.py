@@ -7,6 +7,8 @@ import google.generativeai as genai
 from django.conf import settings
 from google.api_core import exceptions as google_exceptions
 
+from .mrz import validate_td3_mrz
+
 logger = logging.getLogger(__name__)
 
 # "Retry up to 3 times" = 3 retries after the first attempt (4 tries total),
@@ -82,11 +84,44 @@ Return ONLY a valid JSON array of skill strings, no markdown fences, no commenta
 """
 
 
+PASSPORT_SYSTEM_PROMPT = """
+You are an expert at reading passport documents. You will be given one or two images: a passport's bio-data (photo) page, and optionally a second image of a separate address/particulars page.
+
+Step 1 — MRZ: Locate the two-line Machine-Readable Zone (MRZ) at the bottom of the bio-data page — two lines of 44 uppercase letters, digits, and "<" filler characters, in ICAO 9303 TD3 format. Transcribe both lines EXACTLY as printed, character for character, preserving every "<" filler. Do not correct, guess, or "clean up" characters — transcribe exactly what is printed, even if a character looks ambiguous. Each line is EXACTLY 44 characters — this is fixed by the format, not a guideline. Runs of "<" fillers are the easiest part to miscount: after transcribing each line, count its characters one at a time; if a line is not exactly 44 characters, find and fix the run of "<" fillers you miscounted (add or remove "<" characters there, never elsewhere) before writing your final answer. Never truncate or pad a line with the wrong data just to hit 44 — the count must come from careful re-reading, not from arbitrarily adding/removing fillers.
+
+Step 2 — Parse: From the MRZ (or, if the MRZ is smudged, damaged, or otherwise unreadable, from the printed text elsewhere on the bio-data page as a fallback) determine: document type, issuing country, surname, given names, passport number, nationality, date of birth, sex, and date of expiry.
+
+Step 3 — Address: Examine every image provided (the bio-data page and, if given, the second image) for a permanent address section — common on Nepali passports and some others. If found, transcribe it exactly as printed, without restructuring, reformatting, or normalizing it. Do NOT include or guess a postal code — postal codes are out of scope and must never appear in your output, even if one is visible in the source text (omit it from the transcription if so). If no address section is visible on any image, the address is null — never invent or guess one.
+
+Return ONLY this exact JSON object, no markdown fences, no commentary:
+{
+  "full_name": "<given names + surname, as a single display name, title case>",
+  "passport_number": "<as printed>",
+  "nationality": "<full country adjective/name, e.g. \\"Nepalese\\", not a 3-letter code>",
+  "dob": "<DD MMM YYYY, e.g. \\"05 Jan 1998\\">",
+  "sex": "<single letter: M, F, or X>",
+  "expiry_date": "<DD MMM YYYY>",
+  "issuing_country": "<full country name, e.g. \\"Nepal\\", not a 3-letter code>",
+  "permanent_address": "<address text exactly as printed, WITHOUT any postal code, or null if not visible on any image>",
+  "mrz_read": <true if you found and transcribed a legible 2-line MRZ, false if you had to rely on the visual fallback>,
+  "mrz_line1": "<the exact 44-character MRZ line 1 as transcribed, or null if mrz_read is false>",
+  "mrz_line2": "<the exact 44-character MRZ line 2 as transcribed, or null if mrz_read is false>"
+}
+
+If a field genuinely cannot be determined from any provided image, use an empty string "" for it (except permanent_address and the mrz_line fields, which use null). Never fabricate a value.
+"""
+
+
 class AIGenerationError(Exception):
     pass
 
 
-def _call_ai_model(system_prompt: str, user_prompt: str, json_mode: bool = False) -> str:
+def _call_ai_model(system_prompt: str, contents, json_mode: bool = False) -> str:
+    """`contents` is whatever google-generativeai's generate_content() accepts
+    directly: a plain string for text-only prompts, or a list mixing image
+    parts (`{"mime_type": ..., "data": <bytes>}`) with strings for vision
+    calls like the passport scanner.
+    """
     if not settings.GEMINI_API_KEY:
         raise AIGenerationError("GEMINI_API_KEY is not configured on the server.")
 
@@ -105,7 +140,7 @@ def _call_ai_model(system_prompt: str, user_prompt: str, json_mode: bool = False
     last_exc = None
     for attempt in range(MAX_RETRIES + 1):
         try:
-            response = model.generate_content(user_prompt)
+            response = model.generate_content(contents)
             return response.text.strip()
         except google_exceptions.ResourceExhausted as exc:
             last_exc = exc
@@ -173,3 +208,53 @@ def generate_skills(prompt: str) -> list:
         raise AIGenerationError("Model did not return a JSON array of strings.")
 
     return skills
+
+
+def scan_passport(images: list) -> dict:
+    """Read a passport's bio-data (and optional address) page(s) via Gemini
+    vision. `images` is 1-2 dicts of {"mime_type": str, "data": bytes} —
+    bio-data page first, optional address page second.
+
+    Returns the extracted fields plus `mrz_read` (whether a legible MRZ was
+    found) and `checksums_valid` (whether the MRZ's own ICAO check digits,
+    validated independently server-side, confirm the transcription) so the
+    frontend can show a confidence signal — this never blocks the result,
+    the user still has to confirm the fields against their physical
+    passport either way.
+    """
+    contents = [
+        {"mime_type": img["mime_type"], "data": img["data"]} for img in images
+    ] + ["Extract the passport data from the image(s) above, following the instructions exactly."]
+
+    text = _strip_code_fence(_call_ai_model(PASSPORT_SYSTEM_PROMPT, contents, json_mode=True))
+
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise AIGenerationError(f"Model returned invalid JSON: {exc}") from exc
+
+    if not isinstance(data, dict):
+        raise AIGenerationError("Model did not return a JSON object.")
+
+    mrz_read = bool(data.get("mrz_read"))
+    mrz_line1 = data.get("mrz_line1")
+    mrz_line2 = data.get("mrz_line2")
+
+    checksums_valid = False
+    if mrz_read and isinstance(mrz_line1, str) and isinstance(mrz_line2, str):
+        checksums_valid = validate_td3_mrz(mrz_line1.strip(), mrz_line2.strip())["valid"]
+
+    permanent_address = data.get("permanent_address")
+
+    return {
+        "full_name": str(data.get("full_name") or ""),
+        "passport_number": str(data.get("passport_number") or ""),
+        "nationality": str(data.get("nationality") or ""),
+        "dob": str(data.get("dob") or ""),
+        "sex": str(data.get("sex") or ""),
+        "expiry_date": str(data.get("expiry_date") or ""),
+        "issuing_country": str(data.get("issuing_country") or ""),
+        "permanent_address": permanent_address if isinstance(permanent_address, str) else None,
+        "mrz_read": mrz_read,
+        "checksums_valid": checksums_valid,
+    }

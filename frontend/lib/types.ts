@@ -35,10 +35,13 @@ export interface Passport {
   issued_by: string;
   issued_date: string;
   expiry_date: string;
+  scan_image: string; // base64 data URI of the scanned bio-data page, "" if none
+  scan_image_address: string; // base64 data URI of the scanned address page, "" if none
 }
 
 export interface Address {
-  detail: string; // street, city, province, postal code, etc.
+  detail: string; // street, city, province, etc. — not the postal code
+  postcode: string; // entered manually — never guessed by the passport scanner
   country: string;
 }
 
@@ -109,10 +112,13 @@ export const emptyPassport = (): Passport => ({
   issued_by: "",
   issued_date: "",
   expiry_date: "",
+  scan_image: "",
+  scan_image_address: "",
 });
 
 export const emptyAddress = (): Address => ({
   detail: "",
+  postcode: "",
   country: DEFAULT_COUNTRY,
 });
 
@@ -167,7 +173,7 @@ export function normalizeCVContent(raw: unknown): CVContent {
   const rawAddress = data.address;
   const address: Address =
     typeof rawAddress === "string"
-      ? { detail: rawAddress, country: DEFAULT_COUNTRY }
+      ? { ...emptyAddress(), detail: rawAddress }
       : { ...emptyAddress(), ...((rawAddress as Partial<Address>) ?? {}) };
 
   const rawSkills = data.skills;
