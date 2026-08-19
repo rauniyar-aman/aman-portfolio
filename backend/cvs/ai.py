@@ -60,6 +60,27 @@ Write in a natural, human tone, not the way an AI assistant writes:
 Return ONLY a valid JSON array of strings (no markdown fences, no commentary, no extra keys).
 """
 
+SKILLS_SYSTEM_PROMPT = """
+You are helping a candidate identify relevant skills for their CV, based on their education and work experience. You will be given the candidate's full CV data as JSON (education entries, work experience entries with responsibilities, and any skills already listed).
+
+Suggest relevant skills that are genuinely supported by the candidate's education and experience — both technical/hard skills and relevant soft skills where clearly evidenced by their work history (e.g., "Team Leadership" if their experience shows managing people, "Client Communication" if their role involved client-facing work).
+
+Rules:
+- Every suggested skill must be reasonably inferable from the actual education/experience data provided — do not invent skills unrelated to their background
+- Do not repeat skills already listed in the candidate's existing skills, if any are provided
+- Prefer specific, concrete skills over vague ones (e.g., "Adobe Photoshop" over "Design Tools", "SQL" over "Databases") where the specificity is supported by the data
+- Order roughly by relevance/prominence in their background
+- If the candidate has already listed many relevant skills, suggest only the genuinely new ones actually missing — this may be as few as 1-3 skills, or even none if the existing list is already comprehensive. Do not pad the response to reach a target count. It is correct and expected to return an empty list if nothing new is genuinely supported by the CV data.
+- If the candidate has no skills listed yet, suggest a fuller list (typically 8-15) covering the range of what's evidenced in their education and experience.
+
+Write in a natural, human tone — the way a real person would list their own skills, not the way an AI assistant writes:
+- Use plain, concrete skill names, not padded or overly formal phrasing (e.g. "Excel" not "Proficient in Microsoft Excel Applications")
+- Avoid vague, inflated buzzwords as standalone skills (e.g. don't suggest generic entries like "Dynamic Problem Solver" or "Results-Driven Professional" — these aren't real skills, they're filler)
+- Keep each skill to a short phrase (1-4 words), the way skills actually appear on a real CV, not a sentence or description
+
+Return ONLY a valid JSON array of skill strings, no markdown fences, no commentary, no extra keys. Return an empty array `[]` if there is genuinely nothing new to add.
+"""
+
 
 class AIGenerationError(Exception):
     pass
@@ -137,3 +158,18 @@ def generate_experience_bullets(prompt: str) -> list:
         raise AIGenerationError("Model did not return a JSON array of strings.")
 
     return bullets
+
+
+def generate_skills(prompt: str) -> list:
+    """Generate a list of skills suggested from the candidate's CV data."""
+    text = _strip_code_fence(_call_ai_model(SKILLS_SYSTEM_PROMPT, prompt, json_mode=True))
+
+    try:
+        skills = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise AIGenerationError(f"Model returned invalid JSON: {exc}") from exc
+
+    if not isinstance(skills, list) or not all(isinstance(s, str) for s in skills):
+        raise AIGenerationError("Model did not return a JSON array of strings.")
+
+    return skills

@@ -5,7 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .ai import AIGenerationError, generate_experience_bullets, generate_summary
+from .ai import AIGenerationError, generate_experience_bullets, generate_skills, generate_summary
 from .exports import render_cv_docx, render_cv_pdf
 from .models import CV
 from .permissions import IsOwner
@@ -47,6 +47,9 @@ class CVViewSet(viewsets.ModelViewSet):
             if mode == "experience":
                 bullets = generate_experience_bullets(prompt)
                 return Response({"responsibilities": bullets})
+            if mode == "skills":
+                skills = generate_skills(prompt)
+                return Response({"skills": skills})
             summary = generate_summary(prompt)
             return Response({"summary": summary})
         except AIGenerationError as exc:

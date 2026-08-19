@@ -78,6 +78,9 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
   const [expEnhanceError, setExpEnhanceError] = useState<{ index: number; message: string } | null>(
     null
   );
+  const [enhancingSkills, setEnhancingSkills] = useState(false);
+  const [skillsEnhanceError, setSkillsEnhanceError] = useState<string | null>(null);
+  const [skillsEnhanceNotice, setSkillsEnhanceNotice] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<"pdf" | "docx" | null>(null);
 
@@ -394,6 +397,47 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
       });
     } finally {
       setEnhancingExpIndex(null);
+    }
+  }
+
+  async function handleEnhanceSkills() {
+    if (!cvId) return;
+    setEnhancingSkills(true);
+    setSkillsEnhanceError(null);
+    setSkillsEnhanceNotice(null);
+
+    const existingSkills = content.skills
+      .split(",")
+      .map((skill) => skill.trim())
+      .filter(Boolean);
+
+    const prompt = JSON.stringify({
+      education: content.education,
+      experience: content.experience,
+      existing_skills: existingSkills,
+    });
+
+    try {
+      const result = await apiPost<{ skills: string[] }>(`/cvs/${cvId}/generate/`, {
+        prompt,
+        mode: "skills",
+      });
+      const suggestions = result.skills ?? [];
+      if (existingSkills.length === 0) {
+        updateField("skills", suggestions.join(", "));
+      } else if (suggestions.length === 0) {
+        setSkillsEnhanceNotice("Your skills list already looks comprehensive — no new suggestions");
+      } else {
+        updateField("skills", [...existingSkills, ...suggestions].join(", "));
+      }
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        router.push("/cv-maker/login");
+        return;
+      }
+      setSkillsEnhanceError(err instanceof Error ? err.message : "AI enhancement failed.");
+    } finally {
+      setEnhancingSkills(false);
     }
   }
 
@@ -808,7 +852,18 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
         </div>
       </Section>
 
-      <Section title="Skills">
+      <Section
+        title="Skills"
+        action={
+          <EnhanceButton
+            disabled={!canEnhance}
+            loading={enhancingSkills}
+            onClick={handleEnhanceSkills}
+            label={content.skills.trim() ? "✨ Enhance Skills with AI" : "✨ Suggest Skills with AI"}
+            loadingLabel={content.skills.trim() ? "Enhancing…" : "Suggesting…"}
+          />
+        }
+      >
         <textarea
           value={content.skills}
           onChange={(e) => updateField("skills", e.target.value)}
@@ -816,6 +871,16 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
           placeholder="Write your skills however you like — one per line, comma-separated, or as a short paragraph."
           className={inputClass}
         />
+        {skillsEnhanceError && (
+          <p className="mt-1.5 text-xs text-red-700 dark:text-red-400">{skillsEnhanceError}</p>
+        )}
+        {skillsEnhanceNotice && (
+          <p className="mt-1.5 text-xs text-muted">{skillsEnhanceNotice}</p>
+        )}
+        <p className="mt-1.5 text-xs text-muted">
+          AI-generated content should be reviewed for accuracy before submission, especially for
+          visa or university applications.
+        </p>
       </Section>
 
       <Section title="Languages">
@@ -1146,10 +1211,14 @@ function EnhanceButton({
   onClick,
   disabled,
   loading,
+  label = "✨ Enhance with AI",
+  loadingLabel = "Enhancing…",
 }: {
   onClick: () => void;
   disabled: boolean;
   loading: boolean;
+  label?: string;
+  loadingLabel?: string;
 }) {
   return (
     <button
@@ -1159,7 +1228,7 @@ function EnhanceButton({
       title={disabled ? "Save the CV first to use AI enhance" : undefined}
       className="text-xs font-medium text-accent-text hover:text-accent-text/80 disabled:cursor-not-allowed disabled:text-muted/50"
     >
-      {loading ? "Enhancing…" : "✨ Enhance with AI"}
+      {loading ? loadingLabel : label}
     </button>
   );
 }
