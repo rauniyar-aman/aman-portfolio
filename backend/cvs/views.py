@@ -4,12 +4,42 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .ai import AIGenerationError, generate_experience_bullets, generate_skills, generate_summary
 from .exports import render_cv_docx, render_cv_pdf
 from .models import CV
 from .permissions import IsOwner
 from .serializers import CVGenerateSerializer, CVSerializer
+
+
+def _generate_response(prompt, mode):
+    try:
+        if mode == "experience":
+            bullets = generate_experience_bullets(prompt)
+            return Response({"responsibilities": bullets})
+        if mode == "skills":
+            skills = generate_skills(prompt)
+            return Response({"skills": skills})
+        summary = generate_summary(prompt)
+        return Response({"summary": summary})
+    except AIGenerationError as exc:
+        return Response({"detail": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+
+
+class GenerateAIView(APIView):
+    """Stateless AI generation that only needs the in-progress form data,
+    not a saved CV — used so a brand-new, never-saved CV can still use
+    Enhance with AI before the user has clicked Save."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = CVGenerateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return _generate_response(
+            serializer.validated_data["prompt"], serializer.validated_data["mode"]
+        )
 
 
 class CVViewSet(viewsets.ModelViewSet):
@@ -40,20 +70,9 @@ class CVViewSet(viewsets.ModelViewSet):
 
         serializer = CVGenerateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        prompt = serializer.validated_data["prompt"]
-        mode = serializer.validated_data["mode"]
-
-        try:
-            if mode == "experience":
-                bullets = generate_experience_bullets(prompt)
-                return Response({"responsibilities": bullets})
-            if mode == "skills":
-                skills = generate_skills(prompt)
-                return Response({"skills": skills})
-            summary = generate_summary(prompt)
-            return Response({"summary": summary})
-        except AIGenerationError as exc:
-            return Response({"detail": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+        return _generate_response(
+            serializer.validated_data["prompt"], serializer.validated_data["mode"]
+        )
 
     @action(detail=True, methods=["get"], url_path="export/pdf")
     def export_pdf(self, request, pk=None):

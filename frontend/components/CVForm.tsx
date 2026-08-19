@@ -84,7 +84,14 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
   const [previewing, setPreviewing] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<"pdf" | "docx" | null>(null);
 
-  const canEnhance = mode === "edit" && Boolean(cvId);
+  // Preview/export need a persisted CV to fetch a rendered file from;
+  // AI generation only needs the in-memory form state, so it's not gated
+  // on this.
+  const canExport = mode === "edit" && Boolean(cvId);
+
+  const hasEducationOrExperienceContent =
+    content.education.some((e) => e.institute.trim() || e.degree.trim()) ||
+    content.experience.some((e) => e.company.trim() || e.position.trim());
 
   const initialSnapshotRef = useRef(
     JSON.stringify({ title: initialTitle ?? "", content: initialContent ?? emptyCVContent() })
@@ -330,7 +337,6 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
   }
 
   async function handleEnhanceSummary() {
-    if (!cvId) return;
     setEnhancingSummary(true);
     setSummaryEnhanceError(null);
 
@@ -346,7 +352,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
     });
 
     try {
-      const result = await apiPost<{ summary: string }>(`/cvs/${cvId}/generate/`, {
+      const result = await apiPost<{ summary: string }>(`/cvs/generate/`, {
         prompt,
         mode: "summary",
       });
@@ -365,7 +371,6 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
   }
 
   async function handleEnhanceExperience(index: number) {
-    if (!cvId) return;
     setEnhancingExpIndex(index);
     setExpEnhanceError(null);
 
@@ -380,7 +385,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
 
     try {
       const result = await apiPost<{ responsibilities: string[] }>(
-        `/cvs/${cvId}/generate/`,
+        `/cvs/generate/`,
         { prompt, mode: "experience" }
       );
       if (result.responsibilities?.length) {
@@ -401,7 +406,6 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
   }
 
   async function handleEnhanceSkills() {
-    if (!cvId) return;
     setEnhancingSkills(true);
     setSkillsEnhanceError(null);
     setSkillsEnhanceNotice(null);
@@ -418,7 +422,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
     });
 
     try {
-      const result = await apiPost<{ skills: string[] }>(`/cvs/${cvId}/generate/`, {
+      const result = await apiPost<{ skills: string[] }>(`/cvs/generate/`, {
         prompt,
         mode: "skills",
       });
@@ -544,9 +548,10 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
         title="Summary"
         action={
           <EnhanceButton
-            disabled={!canEnhance}
+            disabled={!hasEducationOrExperienceContent}
             loading={enhancingSummary}
             onClick={handleEnhanceSummary}
+            disabledTitle="Add your education or work experience first, then generate a summary with AI"
           />
         }
       >
@@ -554,7 +559,8 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
           value={content.summary}
           onChange={(e) => updateField("summary", e.target.value)}
           rows={4}
-          className={inputClass}
+          placeholder="Write your own summary, or fill in your education and experience below, then click 'Enhance with AI' to generate one for you."
+          className={`${inputClass} text-justify`}
         />
         {summaryEnhanceError && (
           <p className="mt-1.5 text-xs text-red-700 dark:text-red-400">{summaryEnhanceError}</p>
@@ -825,9 +831,10 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
                   label="Responsibilities"
                   action={
                     <EnhanceButton
-                      disabled={!canEnhance}
+                      disabled={!(item.company.trim() || item.position.trim())}
                       loading={enhancingExpIndex === index}
                       onClick={() => handleEnhanceExperience(index)}
+                      disabledTitle="Add a company or position first, then generate bullet points with AI"
                     />
                   }
                 >
@@ -856,11 +863,12 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
         title="Skills"
         action={
           <EnhanceButton
-            disabled={!canEnhance}
+            disabled={!hasEducationOrExperienceContent}
             loading={enhancingSkills}
             onClick={handleEnhanceSkills}
             label={content.skills.trim() ? "✨ Enhance Skills with AI" : "✨ Suggest Skills with AI"}
             loadingLabel={content.skills.trim() ? "Enhancing…" : "Suggesting…"}
+            disabledTitle="Add your education or work experience first, then generate skill suggestions with AI"
           />
         }
       >
@@ -1034,7 +1042,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
           {saving ? "Saving…" : "Save"}
         </button>
 
-        {canEnhance && (
+        {canExport && (
           <>
             <button
               type="button"
@@ -1213,19 +1221,21 @@ function EnhanceButton({
   loading,
   label = "✨ Enhance with AI",
   loadingLabel = "Enhancing…",
+  disabledTitle,
 }: {
   onClick: () => void;
   disabled: boolean;
   loading: boolean;
   label?: string;
   loadingLabel?: string;
+  disabledTitle?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled || loading}
-      title={disabled ? "Save the CV first to use AI enhance" : undefined}
+      title={disabled ? disabledTitle : undefined}
       className="text-xs font-medium text-accent-text hover:text-accent-text/80 disabled:cursor-not-allowed disabled:text-muted/50"
     >
       {loading ? loadingLabel : label}
