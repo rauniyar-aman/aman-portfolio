@@ -5,7 +5,7 @@ import Avatar from "@/components/Avatar";
 
 export default function HomePage() {
   return (
-    <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-4xl flex-col justify-center px-4 py-20">
+    <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-7xl flex-col justify-center px-4 py-20 lg:px-8">
       <Avatar
         name={profile.name}
         src={profile.photo}

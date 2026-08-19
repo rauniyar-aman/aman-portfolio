@@ -3,14 +3,14 @@ import { skills } from "@/lib/profile";
 
 export default function SkillsPage() {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-20">
+    <main className="mx-auto max-w-7xl px-4 py-20 lg:px-8">
       <PageHeader
         eyebrow="Skills"
         title="Tools of the trade"
         description="Languages, frameworks, and tools I use to build production software."
       />
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {skills.map((group) => (
           <div key={group.category} className="rounded-xl border border-border bg-surface p-6">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-accent-text">

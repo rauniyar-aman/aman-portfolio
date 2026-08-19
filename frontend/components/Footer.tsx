@@ -5,7 +5,7 @@ import { SocialIcon, MailIcon } from "@/components/icons";
 export default function Footer() {
   return (
     <footer className="border-t border-border">
-      <div className="mx-auto max-w-5xl px-4 py-10">
+      <div className="mx-auto max-w-7xl px-4 py-10 lg:px-8">
         <div className="flex flex-col gap-10 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-foreground">{profile.name}</p>

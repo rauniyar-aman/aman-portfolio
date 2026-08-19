@@ -58,6 +58,28 @@
         margin-top: 0;
     }
 
+    table.details-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 2px;
+    }
+
+    table.details-table td {
+        padding: 1.5px 6px 1.5px 0;
+        vertical-align: top;
+        font-size: 9.5pt;
+    }
+
+    table.details-table td.label {
+        font-weight: bold;
+        width: 160px;
+        white-space: nowrap;
+    }
+
+    p.details-text {
+        margin: 0;
+    }
+
     table.edu-table {
         width: 100%;
         border-collapse: collapse;
@@ -143,6 +165,34 @@
     </p>
     {% endif %}
     <hr class="title-rule">
+
+    {% if physical_details_rows %}
+    <h2 class="section-heading">Physical Details</h2>
+    <table class="details-table">
+        {% for label, value in physical_details_rows %}
+        <tr><td class="label">{{ label }}</td><td>{{ value }}</td></tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+
+    {% if emergency_contact_rows %}
+    <h2 class="section-heading">Emergency Contact</h2>
+    <table class="details-table">
+        {% for label, value in emergency_contact_rows %}
+        <tr><td class="label">{{ label }}</td><td>{{ value }}</td></tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+
+    {% if preferred_position %}
+    <h2 class="section-heading">Preferred Position</h2>
+    <p class="details-text">{{ preferred_position }}</p>
+    {% endif %}
+
+    {% if medical_fitness %}
+    <h2 class="section-heading">Medical Fitness Status</h2>
+    <p class="details-text">{{ medical_fitness }}</p>
+    {% endif %}
 
     {% if education_rows %}
     <h2 class="section-heading">Education</h2>

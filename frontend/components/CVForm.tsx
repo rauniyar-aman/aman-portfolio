@@ -8,22 +8,29 @@ import type {
   Address,
   CV,
   CVContent,
+  CVPurpose,
   EducationItem,
+  EmergencyContact,
   ExperienceItem,
   LanguageItem,
   Passport,
+  PhysicalDetails,
   PublicationItem,
   ReferenceItem,
 } from "@/lib/types";
 import {
+  BLOOD_GROUP_OPTIONS,
   emptyAddress,
   emptyCVContent,
+  emptyEmergencyContact,
   emptyLanguage,
   emptyPassport,
+  emptyPhysicalDetails,
   emptyPublication,
   emptyReference,
   LANGUAGE_PROFICIENCY_OPTIONS,
   MARITAL_STATUS_OPTIONS,
+  PURPOSE_OPTIONS,
 } from "@/lib/types";
 import { COUNTRIES } from "@/lib/countries";
 import { COUNTRY_CODES, getCallingCodeForCountry } from "@/lib/countryCodes";
@@ -34,6 +41,7 @@ import LinksEditor from "@/components/LinksEditor";
 import MonthYearInput from "@/components/MonthYearInput";
 import PassportScanner, { PassportScanResult } from "@/components/PassportScanner";
 import PhotoUpload from "@/components/PhotoUpload";
+import PurposeSelector from "@/components/PurposeSelector";
 import TemplateStylePicker from "@/components/TemplateStylePicker";
 import ThemeColorPicker from "@/components/ThemeColorPicker";
 
@@ -243,6 +251,33 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
     setScanActive(true);
     setScanVerified(false);
     setScanConfidence({ mrzRead: result.mrz_read, checksumsValid: result.checksums_valid });
+  }
+
+  // Sets a suggested template for the chosen purpose — a starting point
+  // only. The Template Style Picker and Theme Color Picker below stay
+  // fully interactive regardless of purpose; nothing here disables or
+  // filters their options, so the user can immediately override this pick.
+  function handlePurposeChange(purpose: Exclude<CVPurpose, "">) {
+    const option = PURPOSE_OPTIONS.find((o) => o.value === purpose);
+    setContent((prev) => ({
+      ...prev,
+      purpose,
+      template: option?.defaultTemplate ?? prev.template,
+    }));
+  }
+
+  function updatePhysicalDetails(field: keyof PhysicalDetails, value: string) {
+    setContent((prev) => ({
+      ...prev,
+      physical_details: { ...(prev.physical_details ?? emptyPhysicalDetails()), [field]: value },
+    }));
+  }
+
+  function updateEmergencyContact(field: keyof EmergencyContact, value: string) {
+    setContent((prev) => ({
+      ...prev,
+      emergency_contact: { ...(prev.emergency_contact ?? emptyEmergencyContact()), [field]: value },
+    }));
   }
 
   // Defaults the phone country code to match the selected address country —
@@ -559,10 +594,12 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
 
   const passport = content.passport ?? emptyPassport();
   const address = content.address ?? emptyAddress();
+  const physicalDetails = content.physical_details ?? emptyPhysicalDetails();
+  const emergencyContact = content.emergency_contact ?? emptyEmergencyContact();
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
       <div className="max-w-3xl">
       <Link
         href="/cv-maker/dashboard"
@@ -585,6 +622,14 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
           className={inputClass}
         />
       </div>
+
+      <Section title="What is this CV for?">
+        <PurposeSelector value={content.purpose} onChange={handlePurposeChange} />
+        <p className="mt-2 text-xs text-muted">
+          This only sets a suggested template — you can change the template style or theme color
+          below at any time.
+        </p>
+      </Section>
 
       <Section title="Photo">
         <PhotoUpload value={content.photo} onChange={(photo) => updateField("photo", photo)} />
@@ -683,6 +728,18 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
         </p>
       </Section>
 
+      <Section title="Passport Scanner (optional)">
+        <p className="mb-3 text-sm text-muted">
+          Upload a photo of your passport to auto-fill your details.
+        </p>
+        <PassportScanner
+          bioImage={passport.scan_image}
+          addressImage={passport.scan_image_address}
+          onImagesChange={handlePassportImagesChange}
+          onScanResult={handlePassportScanResult}
+        />
+      </Section>
+
       <CollapsibleSection title="Additional Details (optional)" forceOpen={scanActive}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Date of Birth">
@@ -765,13 +822,6 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
           Passport details
         </p>
 
-        <PassportScanner
-          bioImage={passport.scan_image}
-          addressImage={passport.scan_image_address}
-          onImagesChange={handlePassportImagesChange}
-          onScanResult={handlePassportScanResult}
-        />
-
         <div
           className={
             needsScanVerification
@@ -831,6 +881,109 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
             )}
           </div>
         )}
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Physical Details (optional)"
+        forceOpen={content.purpose === "foreign_employment"}
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Field label="Height">
+            <input
+              type="text"
+              value={physicalDetails.height}
+              onChange={(e) => updatePhysicalDetails("height", e.target.value)}
+              placeholder="e.g. 170 cm"
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Weight">
+            <input
+              type="text"
+              value={physicalDetails.weight}
+              onChange={(e) => updatePhysicalDetails("weight", e.target.value)}
+              placeholder="e.g. 65 kg"
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Blood Group">
+            <select
+              value={physicalDetails.blood_group}
+              onChange={(e) => updatePhysicalDetails("blood_group", e.target.value)}
+              className={inputClass}
+            >
+              <option value="">Select…</option>
+              {BLOOD_GROUP_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Emergency Contact (optional)"
+        forceOpen={content.purpose === "foreign_employment"}
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Field label="Name">
+            <input
+              type="text"
+              value={emergencyContact.name}
+              onChange={(e) => updateEmergencyContact("name", e.target.value)}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Relationship">
+            <input
+              type="text"
+              value={emergencyContact.relationship}
+              onChange={(e) => updateEmergencyContact("relationship", e.target.value)}
+              placeholder="e.g. Father, Spouse"
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Phone">
+            <input
+              type="text"
+              value={emergencyContact.phone}
+              onChange={(e) => updateEmergencyContact("phone", e.target.value)}
+              className={inputClass}
+            />
+          </Field>
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Preferred Position (optional)"
+        forceOpen={content.purpose === "foreign_employment"}
+      >
+        <Field label="Preferred Position">
+          <input
+            type="text"
+            value={content.preferred_position}
+            onChange={(e) => updateField("preferred_position", e.target.value)}
+            placeholder="e.g. Electrician, Housekeeping Supervisor"
+            className={inputClass}
+          />
+        </Field>
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        title="Medical Fitness Status (optional)"
+        forceOpen={content.purpose === "foreign_employment"}
+      >
+        <Field label="Medical Fitness Status">
+          <input
+            type="text"
+            value={content.medical_fitness}
+            onChange={(e) => updateField("medical_fitness", e.target.value)}
+            placeholder="e.g. Fit for overseas employment (GAMCA medical)"
+            className={inputClass}
+          />
+        </Field>
       </CollapsibleSection>
 
       <Section
@@ -1290,7 +1443,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
       </div>
 
       <div className="hidden lg:block">
-        <div className="sticky top-8">
+        <div className="sticky top-20">
           <CVPreviewPanel content={content} />
         </div>
       </div>

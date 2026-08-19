@@ -147,6 +147,34 @@ def build_cv_view_model(cv) -> dict:
         if row[1]
     ]
 
+    # Four purpose-agnostic optional sections (most relevant for foreign
+    # employment CVs, but available regardless of purpose) — each omitted
+    # entirely unless it actually has data.
+    physical_details = content.get("physical_details") or {}
+    physical_details_rows = [
+        row
+        for row in (
+            ("Height", physical_details.get("height", "")),
+            ("Weight", physical_details.get("weight", "")),
+            ("Blood Group", physical_details.get("blood_group", "")),
+        )
+        if row[1]
+    ]
+
+    emergency_contact = content.get("emergency_contact") or {}
+    emergency_contact_rows = [
+        row
+        for row in (
+            ("Name", emergency_contact.get("name", "")),
+            ("Relationship", emergency_contact.get("relationship", "")),
+            ("Phone", emergency_contact.get("phone", "")),
+        )
+        if row[1]
+    ]
+
+    preferred_position = content.get("preferred_position", "")
+    medical_fitness = content.get("medical_fitness", "")
+
     education_rows = [
         {
             "degree": item.get("degree", ""),
@@ -200,6 +228,10 @@ def build_cv_view_model(cv) -> dict:
         "summary": summary,
         "personal_rows": personal_rows,
         "passport_rows": passport_rows,
+        "physical_details_rows": physical_details_rows,
+        "emergency_contact_rows": emergency_contact_rows,
+        "preferred_position": preferred_position,
+        "medical_fitness": medical_fitness,
         "education_rows": education_rows,
         "experience_rows": experience_rows,
         "skills": skills,
@@ -533,6 +565,22 @@ def _docx_classic(document, vm, theme_color):
         _add_heading(document, "Passport Details", theme_color)
         _add_label_value_rows(document, vm["passport_rows"])
 
+    if vm["physical_details_rows"]:
+        _add_heading(document, "Physical Details", theme_color)
+        _add_label_value_rows(document, vm["physical_details_rows"])
+
+    if vm["emergency_contact_rows"]:
+        _add_heading(document, "Emergency Contact", theme_color)
+        _add_label_value_rows(document, vm["emergency_contact_rows"])
+
+    if vm["preferred_position"]:
+        _add_heading(document, "Preferred Position", theme_color)
+        document.add_paragraph(vm["preferred_position"])
+
+    if vm["medical_fitness"]:
+        _add_heading(document, "Medical Fitness Status", theme_color)
+        document.add_paragraph(vm["medical_fitness"])
+
     if vm["education_rows"]:
         _add_heading(document, "Academic Qualification", theme_color)
         _add_education_table(document, vm["education_rows"], theme_color)
@@ -609,6 +657,24 @@ def _docx_modern(document, vm, theme_color):
         for link in vm["link_items"]:
             sidebar_line(link["text"])
 
+    if vm["physical_details_rows"]:
+        _add_heading(sidebar_cell, "Physical Details", white, size=10)
+        for label, value in vm["physical_details_rows"]:
+            sidebar_line(f"{label}: {value}")
+
+    if vm["emergency_contact_rows"]:
+        _add_heading(sidebar_cell, "Emergency Contact", white, size=10)
+        for label, value in vm["emergency_contact_rows"]:
+            sidebar_line(f"{label}: {value}")
+
+    if vm["preferred_position"]:
+        _add_heading(sidebar_cell, "Preferred Position", white, size=10)
+        sidebar_line(vm["preferred_position"])
+
+    if vm["medical_fitness"]:
+        _add_heading(sidebar_cell, "Medical Fitness Status", white, size=10)
+        sidebar_line(vm["medical_fitness"])
+
     if vm["education_rows"]:
         _add_heading(sidebar_cell, "Education", white, size=10)
         for edu in vm["education_rows"]:
@@ -674,6 +740,22 @@ def _docx_minimalist(document, vm, theme_color):
         p = document.add_paragraph(vm["summary"])
         p.paragraph_format.space_after = Pt(8)
 
+    if vm["physical_details_rows"]:
+        _add_light_heading(document, "Physical Details", theme_color)
+        _add_label_value_rows(document, vm["physical_details_rows"])
+
+    if vm["emergency_contact_rows"]:
+        _add_light_heading(document, "Emergency Contact", theme_color)
+        _add_label_value_rows(document, vm["emergency_contact_rows"])
+
+    if vm["preferred_position"]:
+        _add_light_heading(document, "Preferred Position", theme_color)
+        document.add_paragraph(vm["preferred_position"])
+
+    if vm["medical_fitness"]:
+        _add_light_heading(document, "Medical Fitness Status", theme_color)
+        document.add_paragraph(vm["medical_fitness"])
+
     if vm["experience_rows"]:
         _add_light_heading(document, "Experience", theme_color)
         _add_experience_entries(document, vm["experience_rows"])
@@ -717,6 +799,22 @@ def _docx_academic(document, vm, theme_color):
     rule.paragraph_format.space_before = Pt(6)
     rule.paragraph_format.space_after = Pt(6)
     _add_bottom_border(rule, theme_color, size=12)
+
+    if vm["physical_details_rows"]:
+        _add_heading(document, "Physical Details", theme_color)
+        _add_label_value_rows(document, vm["physical_details_rows"])
+
+    if vm["emergency_contact_rows"]:
+        _add_heading(document, "Emergency Contact", theme_color)
+        _add_label_value_rows(document, vm["emergency_contact_rows"])
+
+    if vm["preferred_position"]:
+        _add_heading(document, "Preferred Position", theme_color)
+        document.add_paragraph(vm["preferred_position"])
+
+    if vm["medical_fitness"]:
+        _add_heading(document, "Medical Fitness Status", theme_color)
+        document.add_paragraph(vm["medical_fitness"])
 
     if vm["education_rows"]:
         _add_heading(document, "Education", theme_color)

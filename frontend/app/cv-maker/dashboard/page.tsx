@@ -84,7 +84,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="mx-auto max-w-4xl px-4 py-8">
+      <main className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-lg font-semibold text-foreground">Your CVs</h1>
           <Link

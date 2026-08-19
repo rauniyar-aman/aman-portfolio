@@ -57,6 +57,40 @@ export default function ClassicPreview({ vm }: { vm: CVPreviewModel }) {
         </PreviewSection>
       )}
 
+      {vm.physicalDetailsRows.length > 0 && (
+        <PreviewSection title="Physical Details" color={vm.themeColor}>
+          {vm.physicalDetailsRows.map(([label, value]) => (
+            <p key={label}>
+              <span className="font-semibold">{label}: </span>
+              {value}
+            </p>
+          ))}
+        </PreviewSection>
+      )}
+
+      {vm.emergencyContactRows.length > 0 && (
+        <PreviewSection title="Emergency Contact" color={vm.themeColor}>
+          {vm.emergencyContactRows.map(([label, value]) => (
+            <p key={label}>
+              <span className="font-semibold">{label}: </span>
+              {value}
+            </p>
+          ))}
+        </PreviewSection>
+      )}
+
+      {vm.preferredPosition && (
+        <PreviewSection title="Preferred Position" color={vm.themeColor}>
+          <p>{vm.preferredPosition}</p>
+        </PreviewSection>
+      )}
+
+      {vm.medicalFitness && (
+        <PreviewSection title="Medical Fitness Status" color={vm.themeColor}>
+          <p>{vm.medicalFitness}</p>
+        </PreviewSection>
+      )}
+
       {vm.educationRows.length > 0 && (
         <PreviewSection title="Academic Qualification" color={vm.themeColor}>
           <PreviewEducationTable rows={vm.educationRows} color={vm.themeColor} />

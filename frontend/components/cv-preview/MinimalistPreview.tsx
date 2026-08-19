@@ -27,6 +27,40 @@ export default function MinimalistPreview({ vm }: { vm: CVPreviewModel }) {
         </LightSection>
       )}
 
+      {vm.physicalDetailsRows.length > 0 && (
+        <LightSection title="Physical Details" color={vm.themeColor}>
+          {vm.physicalDetailsRows.map(([label, value]) => (
+            <p key={label}>
+              <span className="font-semibold">{label}: </span>
+              {value}
+            </p>
+          ))}
+        </LightSection>
+      )}
+
+      {vm.emergencyContactRows.length > 0 && (
+        <LightSection title="Emergency Contact" color={vm.themeColor}>
+          {vm.emergencyContactRows.map(([label, value]) => (
+            <p key={label}>
+              <span className="font-semibold">{label}: </span>
+              {value}
+            </p>
+          ))}
+        </LightSection>
+      )}
+
+      {vm.preferredPosition && (
+        <LightSection title="Preferred Position" color={vm.themeColor}>
+          <p>{vm.preferredPosition}</p>
+        </LightSection>
+      )}
+
+      {vm.medicalFitness && (
+        <LightSection title="Medical Fitness Status" color={vm.themeColor}>
+          <p>{vm.medicalFitness}</p>
+        </LightSection>
+      )}
+
       {vm.experienceRows.length > 0 && (
         <LightSection title="Experience" color={vm.themeColor}>
           {vm.experienceRows.map((exp, i) => (

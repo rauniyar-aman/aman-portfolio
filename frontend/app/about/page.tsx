@@ -17,7 +17,7 @@ const QUICK_FACTS = [
 
 export default function AboutPage() {
   return (
-    <main className="mx-auto max-w-5xl px-4 py-20">
+    <main className="mx-auto max-w-7xl px-4 py-20 lg:px-8">
       <PageHeader eyebrow="Get to know me" title="About Me" />
 
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[320px_1fr]">
@@ -60,7 +60,7 @@ export default function AboutPage() {
         </div>
 
         <div>
-          <div className="space-y-5">
+          <div className="max-w-3xl space-y-5">
             {bio.map((paragraph, index) => (
               <p key={index} className="text-base leading-relaxed text-foreground/80">
                 {paragraph}
@@ -68,7 +68,7 @@ export default function AboutPage() {
             ))}
           </div>
 
-          <blockquote className="mt-8 border-l-2 border-accent-text pl-5 text-lg font-medium italic text-foreground/90">
+          <blockquote className="mt-8 max-w-3xl border-l-2 border-accent-text pl-5 text-lg font-medium italic text-foreground/90">
             &ldquo;{QUOTE}&rdquo;
           </blockquote>
 

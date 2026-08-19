@@ -54,6 +54,10 @@ export interface CVPreviewModel {
   summary: string;
   personalRows: [string, string][];
   passportRows: [string, string][];
+  physicalDetailsRows: [string, string][];
+  emergencyContactRows: [string, string][];
+  preferredPosition: string;
+  medicalFitness: string;
   educationRows: PreviewEducationRow[];
   experienceRows: PreviewExperienceRow[];
   skills: string;
@@ -97,6 +101,18 @@ export function buildCVPreviewModel(content: CVContent): CVPreviewModel {
     ["Expiry Date", content.passport?.expiry_date],
   ]);
 
+  const physicalDetailsRows = rows([
+    ["Height", content.physical_details?.height],
+    ["Weight", content.physical_details?.weight],
+    ["Blood Group", content.physical_details?.blood_group],
+  ]);
+
+  const emergencyContactRows = rows([
+    ["Name", content.emergency_contact?.name],
+    ["Relationship", content.emergency_contact?.relationship],
+    ["Phone", content.emergency_contact?.phone],
+  ]);
+
   const educationRows: PreviewEducationRow[] = (content.education || []).map((item) => ({
     degree: item.degree,
     institute: item.institute,
@@ -135,6 +151,10 @@ export function buildCVPreviewModel(content: CVContent): CVPreviewModel {
     summary: content.summary,
     personalRows,
     passportRows,
+    physicalDetailsRows,
+    emergencyContactRows,
+    preferredPosition: content.preferred_position,
+    medicalFitness: content.medical_fitness,
     educationRows,
     experienceRows,
     skills: content.skills,

@@ -3,14 +3,14 @@ import { achievements, certifications } from "@/lib/profile";
 
 export default function AchievementsPage() {
   return (
-    <main className="mx-auto max-w-3xl px-4 py-20">
+    <main className="mx-auto max-w-7xl px-4 py-20 lg:px-8">
       <PageHeader
         eyebrow="Achievements"
         title="Milestones"
         description="A running record of things worth marking."
       />
 
-      <ol className="border-l border-border">
+      <ol className="max-w-2xl border-l border-border">
         {achievements.map((achievement) => (
           <li key={achievement.title} className="relative pb-8 pl-8 last:pb-0">
             <span className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full bg-accent" />
@@ -29,7 +29,7 @@ export default function AchievementsPage() {
         <h2 className="text-xs font-semibold uppercase tracking-widest text-accent-text">
           Licenses &amp; Certifications
         </h2>
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {certifications.map((cert) => (
             <div
               key={cert.title}

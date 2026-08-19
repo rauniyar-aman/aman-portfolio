@@ -16,7 +16,7 @@ export default async function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
-      <nav className="relative mx-auto flex max-w-5xl items-center justify-between px-4 py-3.5">
+      <nav className="relative mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 lg:px-8">
         <Link href="/" className="flex items-center gap-2.5">
           <Image src="/logo-mark.png" alt={profile.name} width={32} height={32} className="h-8 w-8" priority />
           <span className="text-sm font-semibold tracking-tight text-foreground">

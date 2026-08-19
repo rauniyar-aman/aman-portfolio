@@ -3,6 +3,7 @@ export const DEFAULT_NATIONALITY = "Nepalese";
 export const DEFAULT_COUNTRY = "Nepal";
 export const DEFAULT_PHONE_COUNTRY_CODE = "+977";
 export const MARITAL_STATUS_OPTIONS = ["Single", "Married"];
+export const BLOOD_GROUP_OPTIONS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
 export type CVTemplate = "classic" | "modern" | "minimalist" | "academic";
 export const DEFAULT_TEMPLATE: CVTemplate = "classic";
@@ -27,6 +28,47 @@ export const TEMPLATE_OPTIONS: { value: CVTemplate; label: string; description: 
     value: "academic",
     label: "Academic",
     description: "Education and publications-focused, for research roles",
+  },
+];
+
+export type CVPurpose = "" | "job" | "foreign_employment" | "study_abroad" | "visa" | "academic";
+export const DEFAULT_PURPOSE: CVPurpose = "";
+
+export const PURPOSE_OPTIONS: {
+  value: Exclude<CVPurpose, "">;
+  label: string;
+  description: string;
+  defaultTemplate: CVTemplate;
+}[] = [
+  {
+    value: "job",
+    label: "Job Application",
+    description: "General job applications, domestically or with a company",
+    defaultTemplate: "modern",
+  },
+  {
+    value: "foreign_employment",
+    label: "Foreign Employment",
+    description: "Applying for work abroad through a manpower/recruitment agency",
+    defaultTemplate: "classic",
+  },
+  {
+    value: "study_abroad",
+    label: "University / Study Abroad",
+    description: "Applying to a university or study-abroad program",
+    defaultTemplate: "classic",
+  },
+  {
+    value: "visa",
+    label: "Visa Application",
+    description: "Supporting document for a visa application",
+    defaultTemplate: "classic",
+  },
+  {
+    value: "academic",
+    label: "Academic / Research",
+    description: "Applying for research positions, PhD programs, or academic roles",
+    defaultTemplate: "academic",
   },
 ];
 
@@ -83,6 +125,20 @@ export interface LanguageItem {
   proficiency: string; // one of LANGUAGE_PROFICIENCY_OPTIONS, or "" until chosen
 }
 
+// All optional — most relevant for the "Foreign Employment" purpose, but
+// available regardless of purpose.
+export interface PhysicalDetails {
+  height: string;
+  weight: string;
+  blood_group: string;
+}
+
+export interface EmergencyContact {
+  name: string;
+  relationship: string;
+  phone: string;
+}
+
 export interface CVContent {
   full_name: string;
   email: string;
@@ -104,6 +160,11 @@ export interface CVContent {
   photo: string; // base64 data URI, optional — "" if not set
   languages: LanguageItem[];
   publications: PublicationItem[]; // optional — used by the academic template
+  purpose: CVPurpose; // what the CV is for — only sets initial defaults, never restricts anything
+  physical_details: PhysicalDetails; // optional, all fields
+  emergency_contact: EmergencyContact; // optional, all fields
+  preferred_position: string; // optional
+  medical_fitness: string; // optional
 }
 
 export interface CV {
@@ -148,6 +209,18 @@ export const emptyLanguage = (): LanguageItem => ({
   proficiency: "",
 });
 
+export const emptyPhysicalDetails = (): PhysicalDetails => ({
+  height: "",
+  weight: "",
+  blood_group: "",
+});
+
+export const emptyEmergencyContact = (): EmergencyContact => ({
+  name: "",
+  relationship: "",
+  phone: "",
+});
+
 export const emptyCVContent = (): CVContent => ({
   full_name: "",
   email: "",
@@ -169,6 +242,11 @@ export const emptyCVContent = (): CVContent => ({
   photo: "",
   languages: [],
   publications: [],
+  purpose: DEFAULT_PURPOSE,
+  physical_details: emptyPhysicalDetails(),
+  emergency_contact: emptyEmergencyContact(),
+  preferred_position: "",
+  medical_fitness: "",
 });
 
 /**
@@ -228,6 +306,12 @@ export function normalizeCVContent(raw: unknown): CVContent {
     ? data.publications.map((p) => ({ ...emptyPublication(), ...((p as Partial<PublicationItem>) ?? {}) }))
     : base.publications;
 
+  const validPurposes = PURPOSE_OPTIONS.map((p) => p.value);
+  const purpose: CVPurpose =
+    typeof data.purpose === "string" && (validPurposes as string[]).includes(data.purpose)
+      ? (data.purpose as CVPurpose)
+      : base.purpose;
+
   return {
     ...base,
     ...data,
@@ -245,5 +329,17 @@ export function normalizeCVContent(raw: unknown): CVContent {
     photo: typeof data.photo === "string" ? data.photo : base.photo,
     languages,
     publications,
+    purpose,
+    physical_details: {
+      ...emptyPhysicalDetails(),
+      ...((data.physical_details as Partial<PhysicalDetails>) ?? {}),
+    },
+    emergency_contact: {
+      ...emptyEmergencyContact(),
+      ...((data.emergency_contact as Partial<EmergencyContact>) ?? {}),
+    },
+    preferred_position:
+      typeof data.preferred_position === "string" ? data.preferred_position : base.preferred_position,
+    medical_fitness: typeof data.medical_fitness === "string" ? data.medical_fitness : base.medical_fitness,
   } as CVContent;
 }

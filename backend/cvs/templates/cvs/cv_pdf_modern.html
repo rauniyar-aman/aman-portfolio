@@ -155,6 +155,30 @@
             {% for link in link_items %}<p>{{ link.text }}</p>{% endfor %}
             {% endif %}
 
+            {% if physical_details_rows %}
+            <h2 class="sidebar-heading">Physical Details</h2>
+            {% for label, value in physical_details_rows %}
+            <p>{{ label }}: {{ value }}</p>
+            {% endfor %}
+            {% endif %}
+
+            {% if emergency_contact_rows %}
+            <h2 class="sidebar-heading">Emergency Contact</h2>
+            {% for label, value in emergency_contact_rows %}
+            <p>{{ label }}: {{ value }}</p>
+            {% endfor %}
+            {% endif %}
+
+            {% if preferred_position %}
+            <h2 class="sidebar-heading">Preferred Position</h2>
+            <p>{{ preferred_position }}</p>
+            {% endif %}
+
+            {% if medical_fitness %}
+            <h2 class="sidebar-heading">Medical Fitness Status</h2>
+            <p>{{ medical_fitness }}</p>
+            {% endif %}
+
             {% if education_rows %}
             <h2 class="sidebar-heading">Education</h2>
             {% for edu in education_rows %}

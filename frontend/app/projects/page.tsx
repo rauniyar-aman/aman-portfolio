@@ -4,14 +4,14 @@ import { projects } from "@/lib/profile";
 
 export default function ProjectsPage() {
   return (
-    <main className="mx-auto max-w-4xl px-4 py-20">
+    <main className="mx-auto max-w-7xl px-4 py-20 lg:px-8">
       <PageHeader
         eyebrow="Projects"
         title="Things I've built"
         description="A selection of projects — from production e-commerce platforms to internal tools."
       />
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
         {projects.map((project) => (
           <ProjectCard key={project.title} project={project} />
         ))}

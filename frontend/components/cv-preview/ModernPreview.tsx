@@ -31,6 +31,38 @@ export default function ModernPreview({ vm }: { vm: CVPreviewModel }) {
           </SidebarSection>
         )}
 
+        {vm.physicalDetailsRows.length > 0 && (
+          <SidebarSection title="Physical Details">
+            {vm.physicalDetailsRows.map(([label, value]) => (
+              <p key={label}>
+                {label}: {value}
+              </p>
+            ))}
+          </SidebarSection>
+        )}
+
+        {vm.emergencyContactRows.length > 0 && (
+          <SidebarSection title="Emergency Contact">
+            {vm.emergencyContactRows.map(([label, value]) => (
+              <p key={label}>
+                {label}: {value}
+              </p>
+            ))}
+          </SidebarSection>
+        )}
+
+        {vm.preferredPosition && (
+          <SidebarSection title="Preferred Position">
+            <p>{vm.preferredPosition}</p>
+          </SidebarSection>
+        )}
+
+        {vm.medicalFitness && (
+          <SidebarSection title="Medical Fitness Status">
+            <p>{vm.medicalFitness}</p>
+          </SidebarSection>
+        )}
+
         {vm.educationRows.length > 0 && (
           <SidebarSection title="Education">
             {vm.educationRows.map((edu, i) => (
