@@ -600,9 +600,9 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
   const hasPassportScan = Boolean(passport.scan_image || passport.scan_image_address);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
+    <div className="w-full px-[1cm] py-8">
       <div
-        className={`grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_380px] ${
+        className={`mx-auto grid max-w-[1600px] grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_380px] ${
           hasPassportScan ? "xl:grid-cols-[320px_minmax(0,1fr)_380px]" : ""
         }`}
       >

@@ -42,13 +42,13 @@ export default function NavMenu({
             <Link
               key={link.href}
               href={link.href}
-              className={`relative px-3 py-2 text-sm font-medium transition-colors ${
-                active ? "text-foreground" : "text-muted hover:text-foreground"
+              className={`relative px-3 py-2 text-sm font-semibold tracking-tight transition-colors ${
+                active ? "text-accent-text" : "text-muted hover:text-foreground"
               }`}
             >
               {link.label}
               {active && (
-                <span className="absolute inset-x-3 -bottom-[1px] h-[2px] rounded-full bg-accent" />
+                <span className="absolute inset-x-3 -bottom-[1px] h-[3px] rounded-full bg-accent" />
               )}
             </Link>
           );
@@ -69,7 +69,7 @@ export default function NavMenu({
           <ThemeToggle />
           <Link
             href="/contact"
-            className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-hover"
+            className="rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-ink transition-colors hover:bg-accent-hover"
           >
             Contact Me
           </Link>
@@ -97,7 +97,7 @@ export default function NavMenu({
                 key={link.href}
                 href={link.href}
                 onClick={() => setIsOpen(false)}
-                className={`rounded-md px-2 py-2.5 text-sm font-medium ${
+                className={`rounded-md px-2 py-2.5 text-sm font-semibold ${
                   isActive(pathname, link.href) ? "text-accent-text" : "text-foreground/80"
                 }`}
               >

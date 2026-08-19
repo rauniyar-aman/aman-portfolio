@@ -17,7 +17,7 @@ const FEATURES = [
 
 export default function CvMakerLandingPage() {
   return (
-    <main className="mx-auto max-w-7xl px-4 py-20 text-center lg:px-8">
+    <main className="w-full px-[1cm] py-20 text-center">
       <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
         CV Maker
       </h1>

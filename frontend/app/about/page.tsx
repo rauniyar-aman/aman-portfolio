@@ -17,7 +17,7 @@ const QUICK_FACTS = [
 
 export default function AboutPage() {
   return (
-    <main className="mx-auto max-w-7xl px-4 py-20 lg:px-8">
+    <main className="w-full px-[1cm] py-20">
       <PageHeader eyebrow="Get to know me" title="About Me" />
 
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[320px_1fr]">

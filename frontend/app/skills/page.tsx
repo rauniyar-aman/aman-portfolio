@@ -3,7 +3,7 @@ import { skills } from "@/lib/profile";
 
 export default function SkillsPage() {
   return (
-    <main className="mx-auto max-w-7xl px-4 py-20 lg:px-8">
+    <main className="w-full px-[1cm] py-20">
       <PageHeader
         eyebrow="Skills"
         title="Tools of the trade"

@@ -2,7 +2,7 @@ import PageHeader from "@/components/PageHeader";
 
 export default function BlogPage() {
   return (
-    <main className="mx-auto max-w-7xl px-4 py-20 lg:px-8">
+    <main className="w-full px-[1cm] py-20">
       <PageHeader eyebrow="Blog" title="Writing" />
 
       <div className="max-w-2xl rounded-xl border border-dashed border-border px-6 py-16 text-center">

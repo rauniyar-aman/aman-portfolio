@@ -3,7 +3,7 @@ import PageHeader from "@/components/PageHeader";
 
 export default function ResumePage() {
   return (
-    <main className="mx-auto max-w-7xl px-4 py-20 lg:px-8">
+    <main className="w-full px-[1cm] py-20">
       <PageHeader eyebrow="Resume" title="No PDF here — I built the generator instead" />
 
       <p className="max-w-xl text-base leading-relaxed text-foreground/80">
