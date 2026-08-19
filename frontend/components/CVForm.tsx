@@ -467,7 +467,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
               <select
                 value={content.phone_country_code}
                 onChange={(e) => updateField("phone_country_code", e.target.value)}
-                className={`${inputClass} w-24 shrink-0`}
+                className={`${inputClass.replace("w-full ", "")} w-24 shrink-0`}
               >
                 {COUNTRY_CODES.map((code) => (
                   <option key={code} value={code}>
