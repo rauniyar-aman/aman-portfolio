@@ -264,9 +264,13 @@
     {% endfor %}
     {% endif %}
 
-    {% if languages_display %}
+    {% if language_lines %}
     <h2 class="section-heading">Languages</h2>
-    <p class="skills-text">{{ languages_display }}</p>
+    <ul class="bullets">
+        {% for line in language_lines %}
+        <li>{{ line }}</li>
+        {% endfor %}
+    </ul>
     {% endif %}
 
     {% if skills %}

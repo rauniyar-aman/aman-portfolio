@@ -90,10 +90,24 @@ def build_cv_view_model(cv) -> dict:
     else:
         address = raw_address
 
-    # Just names, no proficiency level.
+    # {language, proficiency} objects, rendered one per bullet as
+    # "{language} - {proficiency}". Older CVs saved before proficiency
+    # levels existed may still have plain strings here — those render as
+    # just the bare name rather than being dropped.
     raw_languages = content.get("languages") or []
-    languages = [str(lang).strip() for lang in raw_languages if lang and str(lang).strip()]
-    languages_display = ", ".join(languages)
+    language_lines = []
+    for lang in raw_languages:
+        if isinstance(lang, dict):
+            name = str(lang.get("language", "")).strip()
+            proficiency = str(lang.get("proficiency", "")).strip()
+        elif isinstance(lang, str):
+            name = lang.strip()
+            proficiency = ""
+        else:
+            continue
+        if not name:
+            continue
+        language_lines.append(f"{name} - {proficiency}" if proficiency else name)
 
     # Only used by the academic template; omitted (no heading) if empty.
     raw_publications = content.get("publications") or []
@@ -190,8 +204,7 @@ def build_cv_view_model(cv) -> dict:
         "experience_rows": experience_rows,
         "skills": skills,
         "reference_rows": reference_rows,
-        "languages": languages,
-        "languages_display": languages_display,
+        "language_lines": language_lines,
         "publication_rows": publication_rows,
     }
 
@@ -528,9 +541,10 @@ def _docx_classic(document, vm, theme_color):
         _add_heading(document, "Work Experience", theme_color)
         _add_experience_entries(document, vm["experience_rows"])
 
-    if vm["languages_display"]:
+    if vm["language_lines"]:
         _add_heading(document, "Languages", theme_color)
-        document.add_paragraph(vm["languages_display"])
+        for line in vm["language_lines"]:
+            _add_bullet(document, line)
 
     if vm["skills"]:
         _add_heading(document, "Skills", theme_color)
@@ -562,6 +576,15 @@ def _docx_modern(document, vm, theme_color):
         run = p.add_run(text)
         run.font.size = Pt(size)
         run.font.bold = bold
+        run.font.color.rgb = _rgb(white)
+
+    def sidebar_bullet(text, size=9.5):
+        p = sidebar_cell.add_paragraph()
+        p.paragraph_format.left_indent = Pt(10)
+        p.paragraph_format.first_line_indent = Pt(-10)
+        p.paragraph_format.space_after = Pt(2)
+        run = p.add_run(f"•\t{text}")
+        run.font.size = Pt(size)
         run.font.color.rgb = _rgb(white)
 
     if vm["photo"]:
@@ -602,9 +625,10 @@ def _docx_modern(document, vm, theme_color):
             if line.strip():
                 sidebar_line(line.strip())
 
-    if vm["languages_display"]:
+    if vm["language_lines"]:
         _add_heading(sidebar_cell, "Languages", white, size=10)
-        sidebar_line(vm["languages_display"])
+        for line in vm["language_lines"]:
+            sidebar_bullet(line)
 
     if vm["summary"]:
         _add_heading(main_cell, "Summary", theme_color)
@@ -672,9 +696,10 @@ def _docx_minimalist(document, vm, theme_color):
                 dur_run.font.size = Pt(9)
                 dur_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
 
-    if vm["languages_display"]:
+    if vm["language_lines"]:
         _add_light_heading(document, "Languages", theme_color)
-        document.add_paragraph(vm["languages_display"])
+        for line in vm["language_lines"]:
+            _add_bullet(document, line)
 
     if vm["skills"]:
         _add_light_heading(document, "Skills", theme_color)
@@ -712,9 +737,10 @@ def _docx_academic(document, vm, theme_color):
         _add_heading(document, "Research / Professional Experience", theme_color)
         _add_experience_entries(document, vm["experience_rows"])
 
-    if vm["languages_display"]:
+    if vm["language_lines"]:
         _add_heading(document, "Languages", theme_color)
-        document.add_paragraph(vm["languages_display"])
+        for line in vm["language_lines"]:
+            _add_bullet(document, line)
 
     if vm["skills"]:
         _add_heading(document, "Skills", theme_color)

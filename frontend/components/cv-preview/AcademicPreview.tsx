@@ -49,9 +49,11 @@ export default function AcademicPreview({ vm }: { vm: CVPreviewModel }) {
         </PreviewSection>
       )}
 
-      {vm.languagesDisplay && (
+      {vm.languageLines.length > 0 && (
         <PreviewSection title="Languages" color={vm.themeColor}>
-          <p>{vm.languagesDisplay}</p>
+          {vm.languageLines.map((line, i) => (
+            <p key={i}>• {line}</p>
+          ))}
         </PreviewSection>
       )}
 

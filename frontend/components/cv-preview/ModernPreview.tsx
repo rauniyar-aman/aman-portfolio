@@ -48,9 +48,11 @@ export default function ModernPreview({ vm }: { vm: CVPreviewModel }) {
           </SidebarSection>
         )}
 
-        {vm.languagesDisplay && (
+        {vm.languageLines.length > 0 && (
           <SidebarSection title="Languages">
-            <p>{vm.languagesDisplay}</p>
+            {vm.languageLines.map((line, i) => (
+              <p key={i}>• {line}</p>
+            ))}
           </SidebarSection>
         )}
       </div>

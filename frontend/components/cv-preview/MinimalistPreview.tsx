@@ -52,9 +52,11 @@ export default function MinimalistPreview({ vm }: { vm: CVPreviewModel }) {
         </LightSection>
       )}
 
-      {vm.languagesDisplay && (
+      {vm.languageLines.length > 0 && (
         <LightSection title="Languages" color={vm.themeColor}>
-          <p>{vm.languagesDisplay}</p>
+          {vm.languageLines.map((line, i) => (
+            <p key={i}>• {line}</p>
+          ))}
         </LightSection>
       )}
 

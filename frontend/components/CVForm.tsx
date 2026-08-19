@@ -10,6 +10,7 @@ import type {
   CVContent,
   EducationItem,
   ExperienceItem,
+  LanguageItem,
   Passport,
   PublicationItem,
   ReferenceItem,
@@ -17,9 +18,11 @@ import type {
 import {
   emptyAddress,
   emptyCVContent,
+  emptyLanguage,
   emptyPassport,
   emptyPublication,
   emptyReference,
+  LANGUAGE_PROFICIENCY_OPTIONS,
   MARITAL_STATUS_OPTIONS,
 } from "@/lib/types";
 import { COUNTRIES } from "@/lib/countries";
@@ -27,7 +30,6 @@ import { COUNTRY_CODES, getCallingCodeForCountry } from "@/lib/countryCodes";
 import { NATIONALITIES } from "@/lib/nationalities";
 import CVPreviewPanel from "@/components/cv-preview/CVPreviewPanel";
 import DateInput, { MONTH_ABBR } from "@/components/DateInput";
-import LanguagesInput from "@/components/LanguagesInput";
 import LinksEditor from "@/components/LinksEditor";
 import MonthYearInput from "@/components/MonthYearInput";
 import PassportScanner, { PassportScanResult } from "@/components/PassportScanner";
@@ -300,6 +302,30 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
     setContent((prev) => ({
       ...prev,
       education: prev.education.filter((_, i) => i !== index),
+    }));
+  }
+
+  function updateLanguage<K extends keyof LanguageItem>(
+    index: number,
+    field: K,
+    value: LanguageItem[K]
+  ) {
+    setContent((prev) => ({
+      ...prev,
+      languages: prev.languages.map((item, i) =>
+        i === index ? { ...item, [field]: value } : item
+      ),
+    }));
+  }
+
+  function addLanguage() {
+    setContent((prev) => ({ ...prev, languages: [...prev.languages, emptyLanguage()] }));
+  }
+
+  function removeLanguage(index: number) {
+    setContent((prev) => ({
+      ...prev,
+      languages: prev.languages.filter((_, i) => i !== index),
     }));
   }
 
@@ -1037,11 +1063,52 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
         </p>
       </Section>
 
-      <Section title="Languages">
-        <LanguagesInput
-          value={content.languages}
-          onChange={(languages) => updateField("languages", languages)}
-        />
+      <Section title="Languages" action={<AddButton onClick={addLanguage} label="Add language" />}>
+        <div className="space-y-6">
+          {content.languages.map((item, index) => (
+            <div key={index} className="rounded-md border border-border p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <span className="text-xs font-medium uppercase tracking-wide text-muted">
+                  Language {index + 1}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeLanguage(index)}
+                  className="text-xs text-red-700 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                >
+                  Remove
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Language">
+                  <input
+                    type="text"
+                    value={item.language}
+                    onChange={(e) => updateLanguage(index, "language", e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Proficiency">
+                  <select
+                    value={item.proficiency}
+                    onChange={(e) => updateLanguage(index, "proficiency", e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="">Select…</option>
+                    {LANGUAGE_PROFICIENCY_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+            </div>
+          ))}
+          {content.languages.length === 0 && (
+            <p className="text-sm text-muted">No languages added yet.</p>
+          )}
+        </div>
       </Section>
 
       {content.template === "academic" && (

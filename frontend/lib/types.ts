@@ -76,6 +76,13 @@ export interface PublicationItem {
   year: string;
 }
 
+export const LANGUAGE_PROFICIENCY_OPTIONS = ["Native", "Fluent", "Proficient", "Intermediate"];
+
+export interface LanguageItem {
+  language: string;
+  proficiency: string; // one of LANGUAGE_PROFICIENCY_OPTIONS, or "" until chosen
+}
+
 export interface CVContent {
   full_name: string;
   email: string;
@@ -95,7 +102,7 @@ export interface CVContent {
   theme_color: string;
   template: CVTemplate;
   photo: string; // base64 data URI, optional — "" if not set
-  languages: string[]; // just names, e.g. ["English", "Spanish"]
+  languages: LanguageItem[];
   publications: PublicationItem[]; // optional — used by the academic template
 }
 
@@ -134,6 +141,11 @@ export const emptyPublication = (): PublicationItem => ({
   title: "",
   venue: "",
   year: "",
+});
+
+export const emptyLanguage = (): LanguageItem => ({
+  language: "",
+  proficiency: "",
 });
 
 export const emptyCVContent = (): CVContent => ({
@@ -189,8 +201,27 @@ export function normalizeCVContent(raw: unknown): CVContent {
       ? (data.template as CVTemplate)
       : base.template;
 
-  const languages = Array.isArray(data.languages)
-    ? data.languages.filter((l): l is string => typeof l === "string" && l.trim().length > 0)
+  // Languages used to be a plain string[] before proficiency levels were
+  // added — migrate each old entry to { language, proficiency: "" } rather
+  // than discarding it, so an existing CV doesn't lose data on load.
+  const languages: LanguageItem[] = Array.isArray(data.languages)
+    ? data.languages
+        .map((l): LanguageItem | null => {
+          if (typeof l === "string") {
+            const language = l.trim();
+            return language ? { language, proficiency: "" } : null;
+          }
+          if (l && typeof l === "object" && typeof (l as Partial<LanguageItem>).language === "string") {
+            const language = (l as LanguageItem).language.trim();
+            if (!language) return null;
+            const proficiency = typeof (l as Partial<LanguageItem>).proficiency === "string"
+              ? (l as LanguageItem).proficiency
+              : "";
+            return { language, proficiency };
+          }
+          return null;
+        })
+        .filter((l): l is LanguageItem => l !== null)
     : base.languages;
 
   const publications = Array.isArray(data.publications)

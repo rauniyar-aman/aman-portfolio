@@ -58,7 +58,7 @@ export interface CVPreviewModel {
   experienceRows: PreviewExperienceRow[];
   skills: string;
   referenceRows: PreviewReferenceRow[];
-  languagesDisplay: string;
+  languageLines: string[];
   publicationRows: PreviewPublicationRow[];
 }
 
@@ -116,7 +116,11 @@ export function buildCVPreviewModel(content: CVContent): CVPreviewModel {
     .filter((r) => r.name)
     .map((r) => ({ name: r.name, position: r.position, company: r.company, phone: r.phone, email: r.email }));
 
-  const languagesDisplay = (content.languages || []).filter(Boolean).join(", ");
+  const languageLines = (content.languages || [])
+    .filter((item) => item.language.trim())
+    .map((item) =>
+      item.proficiency.trim() ? `${item.language.trim()} - ${item.proficiency.trim()}` : item.language.trim()
+    );
 
   const publicationRows: PreviewPublicationRow[] = (content.publications || []).filter((p) => p.title);
 
@@ -135,7 +139,7 @@ export function buildCVPreviewModel(content: CVContent): CVPreviewModel {
     experienceRows,
     skills: content.skills,
     referenceRows,
-    languagesDisplay,
+    languageLines,
     publicationRows,
   };
 }
