@@ -682,71 +682,87 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
         action={<AddButton onClick={addEducation} label="Add education" />}
       >
         <div className="space-y-6">
-          {content.education.map((item, index) => (
-            <div key={index} className="rounded-md border border-border p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-xs font-medium uppercase tracking-wide text-muted">
-                  Education {index + 1}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => removeEducation(index)}
-                  className="text-xs text-red-700 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                >
-                  Remove
-                </button>
-              </div>
+          {content.education.map((item, index) => {
+            const isOngoing = item.end_date.trim().toLowerCase() === "present";
+            return (
+              <div key={index} className="rounded-md border border-border p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-xs font-medium uppercase tracking-wide text-muted">
+                    Education {index + 1}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeEducation(index)}
+                    className="text-xs text-red-700 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                  >
+                    Remove
+                  </button>
+                </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Degree / Award">
-                  <input
-                    type="text"
-                    value={item.degree}
-                    onChange={(e) => updateEducation(index, "degree", e.target.value)}
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Institute">
-                  <input
-                    type="text"
-                    value={item.institute}
-                    onChange={(e) => updateEducation(index, "institute", e.target.value)}
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Institute Address">
-                  <input
-                    type="text"
-                    value={item.address}
-                    onChange={(e) => updateEducation(index, "address", e.target.value)}
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Percentage / Grade">
-                  <input
-                    type="text"
-                    value={item.percentage_grade}
-                    onChange={(e) => updateEducation(index, "percentage_grade", e.target.value)}
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="Start Date">
-                  <MonthYearInput
-                    value={item.start_date}
-                    onChange={(value) => updateEducation(index, "start_date", value)}
-                    className={inputClass}
-                  />
-                </Field>
-                <Field label="End Date">
-                  <MonthYearInput
-                    value={item.end_date}
-                    onChange={(value) => updateEducation(index, "end_date", value)}
-                    className={inputClass}
-                  />
-                </Field>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Degree / Award">
+                    <input
+                      type="text"
+                      value={item.degree}
+                      onChange={(e) => updateEducation(index, "degree", e.target.value)}
+                      className={inputClass}
+                    />
+                  </Field>
+                  <Field label="Institute">
+                    <input
+                      type="text"
+                      value={item.institute}
+                      onChange={(e) => updateEducation(index, "institute", e.target.value)}
+                      className={inputClass}
+                    />
+                  </Field>
+                  <Field label="Institute Address">
+                    <input
+                      type="text"
+                      value={item.address}
+                      onChange={(e) => updateEducation(index, "address", e.target.value)}
+                      className={inputClass}
+                    />
+                  </Field>
+                  <Field label="Percentage / Grade">
+                    <input
+                      type="text"
+                      value={item.percentage_grade}
+                      onChange={(e) => updateEducation(index, "percentage_grade", e.target.value)}
+                      className={inputClass}
+                    />
+                  </Field>
+                  <Field label="Start Date">
+                    <MonthYearInput
+                      value={item.start_date}
+                      onChange={(value) => updateEducation(index, "start_date", value)}
+                      className={inputClass}
+                    />
+                  </Field>
+                  <Field label="End Date">
+                    <div className="flex items-center gap-2">
+                      <MonthYearInput
+                        disabled={isOngoing}
+                        value={isOngoing ? "" : item.end_date}
+                        onChange={(value) => updateEducation(index, "end_date", value)}
+                        className={`${inputClass} disabled:opacity-50`}
+                      />
+                      <label className="flex shrink-0 items-center gap-1.5 text-xs text-muted">
+                        <input
+                          type="checkbox"
+                          checked={isOngoing}
+                          onChange={(e) =>
+                            updateEducation(index, "end_date", e.target.checked ? "Present" : "")
+                          }
+                        />
+                        Currently studying
+                      </label>
+                    </div>
+                  </Field>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {content.education.length === 0 && (
             <p className="text-sm text-muted">No education added yet.</p>
           )}
