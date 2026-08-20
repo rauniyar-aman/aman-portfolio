@@ -87,11 +87,18 @@ export function PreviewEducationTable({
   rows: PreviewEducationRow[];
   color: string;
 }) {
+  // A column entirely blank across every entry (most often Address or
+  // Grade) is dropped rather than rendered as a pointless empty column —
+  // same rule build_cv_view_model/_add_education_table apply on the export
+  // side, so what's shown while editing matches what actually exports.
+  const columns = EDU_COLUMNS.filter((col) => rows.some((row) => row[col.key]));
+  const visibleColumns = columns.length > 0 ? columns : EDU_COLUMNS;
+
   return (
     <table className="w-full border-collapse">
       <thead>
         <tr>
-          {EDU_COLUMNS.map((col) => (
+          {visibleColumns.map((col) => (
             <th
               key={col.key}
               className="px-[0.3em] py-[0.25em] text-left font-semibold text-white"
@@ -105,7 +112,7 @@ export function PreviewEducationTable({
       <tbody>
         {rows.map((edu, i) => (
           <tr key={i} className="border-b border-neutral-200">
-            {EDU_COLUMNS.map((col) => (
+            {visibleColumns.map((col) => (
               <td key={col.key} className="px-[0.3em] py-[0.25em] align-top">
                 {edu[col.key]}
               </td>

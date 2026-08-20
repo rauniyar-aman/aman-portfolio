@@ -279,21 +279,21 @@
     <table class="edu-table">
         <thead>
             <tr>
-                <th>Award</th>
-                <th>Institute</th>
-                <th>Address</th>
-                <th>Percentage/Grade</th>
-                <th>Duration</th>
+                {% if education_show_degree %}<th>Award</th>{% endif %}
+                {% if education_show_institute %}<th>Institute</th>{% endif %}
+                {% if education_show_address %}<th>Address</th>{% endif %}
+                {% if education_show_grade %}<th>Percentage/Grade</th>{% endif %}
+                {% if education_show_duration %}<th>Duration</th>{% endif %}
             </tr>
         </thead>
         <tbody>
             {% for edu in education_rows %}
             <tr>
-                <td>{{ edu.degree }}</td>
-                <td>{{ edu.institute }}</td>
-                <td>{{ edu.address }}</td>
-                <td>{{ edu.percentage_grade }}</td>
-                <td>{{ edu.duration }}</td>
+                {% if education_show_degree %}<td>{{ edu.degree }}</td>{% endif %}
+                {% if education_show_institute %}<td>{{ edu.institute }}</td>{% endif %}
+                {% if education_show_address %}<td>{{ edu.address }}</td>{% endif %}
+                {% if education_show_grade %}<td>{{ edu.percentage_grade }}</td>{% endif %}
+                {% if education_show_duration %}<td>{{ edu.duration }}</td>{% endif %}
             </tr>
             {% endfor %}
         </tbody>

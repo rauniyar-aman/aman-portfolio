@@ -191,6 +191,7 @@ def build_cv_view_model(cv) -> dict:
         }
         for item in education
     ]
+    education_column_visibility = _education_column_visibility(education_rows)
 
     experience_rows = [
         {
@@ -237,6 +238,11 @@ def build_cv_view_model(cv) -> dict:
         "preferred_position": preferred_position,
         "medical_fitness": medical_fitness,
         "education_rows": education_rows,
+        "education_show_degree": education_column_visibility["degree"],
+        "education_show_institute": education_column_visibility["institute"],
+        "education_show_address": education_column_visibility["address"],
+        "education_show_grade": education_column_visibility["percentage_grade"],
+        "education_show_duration": education_column_visibility["duration"],
         "experience_rows": experience_rows,
         "skills": skills,
         "reference_rows": reference_rows,
@@ -465,22 +471,48 @@ def _write_header_text(container, vm, theme_color, align_center=True):
             _add_hyperlink(links_p, link["href"], link["text"], theme_color)
 
 
+EDUCATION_COLUMNS = [
+    ("degree", "Award"),
+    ("institute", "Institute"),
+    ("address", "Address"),
+    ("percentage_grade", "Percentage/Grade"),
+    ("duration", "Duration"),
+]
+
+
+def _education_column_visibility(education_rows: list) -> dict:
+    """Which of the education table's columns have at least one non-empty
+    value across all entries. Address and Percentage/Grade are the two
+    users most often leave blank across every entry — shared by the DOCX
+    table builder and build_cv_view_model (for the PDF templates) so both
+    apply the exact same rule instead of two hand-copied versions drifting
+    apart.
+    """
+    return {key: any(row.get(key) for row in education_rows) for key, _label in EDUCATION_COLUMNS}
+
+
 def _add_education_table(container, education_rows, theme_color):
-    headers = ["Award", "Institute", "Address", "Percentage/Grade", "Duration"]
-    table = container.add_table(rows=1, cols=len(headers))
+    visibility = _education_column_visibility(education_rows)
+    columns = [(key, label) for key, label in EDUCATION_COLUMNS if visibility[key]]
+    # A row with every field genuinely blank is a degenerate edge case (an
+    # "Add education" entry the user never filled in) — fall back to the
+    # full column set rather than trying to build a zero-column table.
+    if not columns:
+        columns = EDUCATION_COLUMNS
+
+    table = container.add_table(rows=1, cols=len(columns))
     table.autofit = True
     header_row = table.rows[0]
-    for cell, header in zip(header_row.cells, headers):
+    for cell, (_key, label) in zip(header_row.cells, columns):
         _set_cell_background(cell, theme_color)
-        run = cell.paragraphs[0].add_run(header)
+        run = cell.paragraphs[0].add_run(label)
         run.bold = True
         run.font.size = Pt(9.5)
         run.font.color.rgb = _rgb("#FFFFFF")
     for edu in education_rows:
         row = table.add_row()
-        values = [edu["degree"], edu["institute"], edu["address"], edu["percentage_grade"], edu["duration"]]
-        for cell, value in zip(row.cells, values):
-            run = cell.paragraphs[0].add_run(value)
+        for cell, (key, _label) in zip(row.cells, columns):
+            run = cell.paragraphs[0].add_run(edu[key])
             run.font.size = Pt(9.5)
 
 
