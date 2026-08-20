@@ -231,6 +231,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
 
   function handlePassportScanResult(result: PassportScanResult) {
     const dob = parseScanDate(result.dob);
+    const issued = parseScanDate(result.issued_date ?? "");
     const expiry = parseScanDate(result.expiry_date);
 
     setContent((prev) => ({
@@ -242,6 +243,7 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
         ...(prev.passport ?? emptyPassport()),
         number: result.passport_number || prev.passport.number,
         issued_by: result.issuing_country || prev.passport.issued_by,
+        issued_date: issued.slash || prev.passport.issued_date,
         expiry_date: expiry.slash || prev.passport.expiry_date,
       },
       address: result.permanent_address

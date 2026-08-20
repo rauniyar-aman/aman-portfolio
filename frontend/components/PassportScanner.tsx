@@ -13,6 +13,7 @@ export interface PassportScanResult {
   nationality: string;
   dob: string; // "DD MMM YYYY"
   sex: string;
+  issued_date: string | null; // "DD MMM YYYY", null if not legible — never guessed
   expiry_date: string; // "DD MMM YYYY"
   issuing_country: string;
   permanent_address: string | null;

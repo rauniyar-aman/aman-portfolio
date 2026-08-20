@@ -91,7 +91,9 @@ Step 1 — MRZ: Locate the two-line Machine-Readable Zone (MRZ) at the bottom of
 
 Step 2 — Parse: From the MRZ (or, if the MRZ is smudged, damaged, or otherwise unreadable, from the printed text elsewhere on the bio-data page as a fallback) determine: document type, issuing country, surname, given names, passport number, nationality, date of birth, sex, and date of expiry.
 
-Step 3 — Address: Examine every image provided (the bio-data page and, if given, the second image) for a permanent address section — common on Nepali passports and some others, and frequently printed across TWO OR MORE LINES (e.g. a village/ward/municipality line followed by a separate district or province line). Read the ENTIRE address block from top to bottom, line by line, and concatenate every line into the final value in the order printed — transcribing only the last line, the most prominent line, or a single word (e.g. returning just the district name while silently dropping the village/ward/municipality that preceded it) is a critical error, not an acceptable shortening. Preserve every piece of information exactly as printed — do not reword, restructure, merge or reorder fields, or drop any part. The one exception is casing: if the printed address is in ALL CAPS (as on most Nepali passports), convert it to natural title case (e.g. "RANIRATAWADA, MAHOTTARI 4, MAHOTTARI" becomes "Raniratawada, Mahottari 4, Mahottari") — this is a casing normalization only, so keep every word, number, and comma from the original exactly where it is; do not shorten, summarize, or otherwise change the content while doing this. Do NOT include or guess a postal code — postal codes are out of scope and must never appear in your output, even if one is visible in the source text (omit it from the transcription if so). If no address section is visible on any image, the address is null — never invent or guess one.
+Step 3 — Date of Issue: The MRZ does NOT encode a date of issue — ICAO 9303 has no field for it, so it can never be read or derived from the MRZ lines. It only exists as printed text elsewhere on the bio-data page, usually near the passport number and date of expiry, labeled "Date of Issue", "Issued", or similar. Locate that printed label and read the date next to it. If no such printed date is visible or legible in the provided image(s) — for example if that part of the page is cropped out of frame or obscured — return null for it. Never guess, estimate, or derive this date from the date of birth, date of expiry, or any other field.
+
+Step 4 — Address: Examine every image provided (the bio-data page and, if given, the second image) for a permanent address section — common on Nepali passports and some others, and frequently printed across TWO OR MORE LINES (e.g. a village/ward/municipality line followed by a separate district or province line). Read the ENTIRE address block from top to bottom, line by line, and concatenate every line into the final value in the order printed — transcribing only the last line, the most prominent line, or a single word (e.g. returning just the district name while silently dropping the village/ward/municipality that preceded it) is a critical error, not an acceptable shortening. Preserve every piece of information exactly as printed — do not reword, restructure, merge or reorder fields, or drop any part. The one exception is casing: if the printed address is in ALL CAPS (as on most Nepali passports), convert it to natural title case (e.g. "RANIRATAWADA, MAHOTTARI 4, MAHOTTARI" becomes "Raniratawada, Mahottari 4, Mahottari") — this is a casing normalization only, so keep every word, number, and comma from the original exactly where it is; do not shorten, summarize, or otherwise change the content while doing this. Do NOT include or guess a postal code — postal codes are out of scope and must never appear in your output, even if one is visible in the source text (omit it from the transcription if so). If no address section is visible on any image, the address is null — never invent or guess one.
 
 Return ONLY this exact JSON object, no markdown fences, no commentary:
 {
@@ -100,6 +102,7 @@ Return ONLY this exact JSON object, no markdown fences, no commentary:
   "nationality": "<full country adjective/name, e.g. \\"Nepalese\\", not a 3-letter code>",
   "dob": "<DD MMM YYYY, e.g. \\"05 Jan 1998\\">",
   "sex": "<single letter: M, F, or X>",
+  "issued_date": "<DD MMM YYYY, as printed on the visual page (NOT the MRZ) near the passport number/expiry date, or null if not legible in the provided image(s)>",
   "expiry_date": "<DD MMM YYYY>",
   "issuing_country": "<full country name, e.g. \\"Nepal\\", not a 3-letter code>",
   "permanent_address": "<address text exactly as printed, WITHOUT any postal code, or null if not visible on any image>",
@@ -108,7 +111,7 @@ Return ONLY this exact JSON object, no markdown fences, no commentary:
   "mrz_line2": "<the exact 44-character MRZ line 2 as transcribed, or null if mrz_read is false>"
 }
 
-If a field genuinely cannot be determined from any provided image, use an empty string "" for it (except permanent_address and the mrz_line fields, which use null). Never fabricate a value.
+If a field genuinely cannot be determined from any provided image, use an empty string "" for it (except permanent_address, issued_date, and the mrz_line fields, which use null). Never fabricate a value.
 """
 
 
@@ -245,6 +248,7 @@ def scan_passport(images: list) -> dict:
         checksums_valid = validate_td3_mrz(mrz_line1.strip(), mrz_line2.strip())["valid"]
 
     permanent_address = data.get("permanent_address")
+    issued_date = data.get("issued_date")
 
     return {
         "full_name": str(data.get("full_name") or ""),
@@ -252,6 +256,7 @@ def scan_passport(images: list) -> dict:
         "nationality": str(data.get("nationality") or ""),
         "dob": str(data.get("dob") or ""),
         "sex": str(data.get("sex") or ""),
+        "issued_date": issued_date.strip() if isinstance(issued_date, str) and issued_date.strip() else None,
         "expiry_date": str(data.get("expiry_date") or ""),
         "issuing_country": str(data.get("issuing_country") or ""),
         "permanent_address": permanent_address if isinstance(permanent_address, str) else None,
