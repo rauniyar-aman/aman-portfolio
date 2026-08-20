@@ -1,5 +1,5 @@
 import type { CVPreviewModel } from "@/lib/cvPreviewModel";
-import { PreviewEducationTable, PreviewSection } from "./PreviewPaper";
+import { PreviewDeclarationSection, PreviewEducationTable, PreviewSection } from "./PreviewPaper";
 
 export default function AcademicPreview({ vm }: { vm: CVPreviewModel }) {
   const contactLine = [vm.phone, vm.email, vm.address].filter(Boolean).join("   |   ");
@@ -95,6 +95,14 @@ export default function AcademicPreview({ vm }: { vm: CVPreviewModel }) {
         <PreviewSection title="Skills" color={vm.themeColor}>
           <p className="whitespace-pre-line">{vm.skills}</p>
         </PreviewSection>
+      )}
+
+      {vm.includeDeclaration && vm.declarationText && (
+        <PreviewDeclarationSection
+          text={vm.declarationText}
+          date={vm.declarationDate}
+          color={vm.themeColor}
+        />
       )}
     </div>
   );

@@ -175,6 +175,10 @@ def build_cv_view_model(cv) -> dict:
     preferred_position = content.get("preferred_position", "")
     medical_fitness = content.get("medical_fitness", "")
 
+    include_declaration = bool(content.get("include_declaration"))
+    declaration_text = content.get("declaration_text") or ""
+    declaration_date = content.get("declaration_date") or ""
+
     education_rows = [
         {
             "degree": item.get("degree", ""),
@@ -238,6 +242,9 @@ def build_cv_view_model(cv) -> dict:
         "reference_rows": reference_rows,
         "language_lines": language_lines,
         "publication_rows": publication_rows,
+        "include_declaration": include_declaration,
+        "declaration_text": declaration_text,
+        "declaration_date": declaration_date,
     }
 
 
@@ -521,6 +528,60 @@ def _add_reference_entries(container, reference_rows):
             contact_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
 
 
+def _add_declaration_section(document, vm, theme_color):
+    """Always appended straight to `document` (never to a template's sidebar/
+    main cell) so it lands after every other section regardless of layout —
+    see the four _docx_* builders below, each of which calls this as its
+    final statement. Deliberately doesn't reuse _add_heading: that always
+    draws a full-width bottom border, but here the "line" is tied
+    specifically to the date (only drawn when declaration_date is set) and
+    is short, not a full-width section divider.
+    """
+    if not (vm["include_declaration"] and vm["declaration_text"]):
+        return
+
+    declaration_date = vm["declaration_date"]
+
+    if declaration_date:
+        table = document.add_table(rows=1, cols=2)
+        table.autofit = False
+        heading_cell, date_cell = table.rows[0].cells
+        table.columns[0].width = Inches(1.7)
+        table.columns[1].width = Inches(5.6)
+        heading_cell.width = Inches(1.7)
+        date_cell.width = Inches(5.6)
+
+        heading_p = heading_cell.paragraphs[0]
+        heading_p.paragraph_format.space_before = Pt(12)
+        heading_run = heading_p.add_run("DECLARATION:")
+        heading_run.bold = True
+        heading_run.font.size = Pt(11)
+        heading_run.font.color.rgb = _rgb(theme_color)
+
+        date_p = date_cell.paragraphs[0]
+        date_p.paragraph_format.space_before = Pt(12)
+        date_p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        _add_bottom_border(date_p, theme_color, size=8)
+        date_run = date_p.add_run(declaration_date)
+        date_run.font.size = Pt(9.5)
+        date_run.font.color.rgb = RGBColor(0x55, 0x55, 0x55)
+    else:
+        heading_p = document.add_paragraph()
+        heading_p.paragraph_format.space_before = Pt(12)
+        heading_run = heading_p.add_run("DECLARATION:")
+        heading_run.bold = True
+        heading_run.font.size = Pt(11)
+        heading_run.font.color.rgb = _rgb(theme_color)
+
+    # Free text from a textarea — split on newlines the same way "skills" is,
+    # so a multi-line declaration doesn't collapse into one run-on paragraph.
+    lines = vm["declaration_text"].split("\n")
+    first_p = document.add_paragraph(lines[0])
+    first_p.paragraph_format.space_before = Pt(4)
+    for line in lines[1:]:
+        document.add_paragraph(line)
+
+
 def _configure_document(document):
     section = document.sections[0]
     section.left_margin = Inches(0.5)
@@ -602,6 +663,8 @@ def _docx_classic(document, vm, theme_color):
     if vm["reference_rows"]:
         _add_heading(document, "References", theme_color)
         _add_reference_entries(document, vm["reference_rows"])
+
+    _add_declaration_section(document, vm, theme_color)
 
 
 def _docx_modern(document, vm, theme_color):
@@ -704,6 +767,12 @@ def _docx_modern(document, vm, theme_color):
         _add_heading(main_cell, "Experience", theme_color)
         _add_experience_entries(main_cell, vm["experience_rows"])
 
+    # Added to `document`, not `main_cell` — the sidebar/main table is a
+    # fixed decorative layout, so this deliberately lands after the whole
+    # table rather than inside one of its cells, to stay the true last thing
+    # in the document.
+    _add_declaration_section(document, vm, theme_color)
+
 
 def _add_light_heading(container, text, color_hex, size=10.5):
     heading = container.add_paragraph()
@@ -788,6 +857,8 @@ def _docx_minimalist(document, vm, theme_color):
         for line in vm["skills"].split("\n"):
             document.add_paragraph(line)
 
+    _add_declaration_section(document, vm, theme_color)
+
 
 def _docx_academic(document, vm, theme_color):
     normal = document.styles["Normal"]
@@ -844,6 +915,8 @@ def _docx_academic(document, vm, theme_color):
         _add_heading(document, "Skills", theme_color)
         for line in vm["skills"].split("\n"):
             document.add_paragraph(line)
+
+    _add_declaration_section(document, vm, theme_color)
 
 
 DOCX_BUILDERS = {

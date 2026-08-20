@@ -150,6 +150,31 @@
     p.languages-text {
         margin: 0;
     }
+
+    .declaration-block {
+        margin-top: 16px;
+    }
+
+    .declaration-heading {
+        font-size: 12pt;
+        font-weight: bold;
+        color: {{ theme_color }};
+    }
+
+    .declaration-line {
+        display: inline-block;
+        min-width: 120px;
+        margin-left: 12px;
+        border-bottom: 1pt solid {{ theme_color }};
+        text-align: right;
+        padding-bottom: 1px;
+        font-size: 9pt;
+        color: #555555;
+    }
+
+    p.declaration-text {
+        margin: 8px 0 0 0;
+    }
 </style>
 </head>
 <body>
@@ -261,6 +286,13 @@
     {% if skills %}
     <h2 class="section-heading">Skills</h2>
     <p class="skills-text">{{ skills|linebreaksbr }}</p>
+    {% endif %}
+
+    {% if include_declaration and declaration_text %}
+    <div class="declaration-block">
+        <span class="declaration-heading">Declaration:</span>{% if declaration_date %}<span class="declaration-line">{{ declaration_date }}</span>{% endif %}
+        <p class="declaration-text">{{ declaration_text|linebreaksbr }}</p>
+    </div>
     {% endif %}
 </body>
 </html>

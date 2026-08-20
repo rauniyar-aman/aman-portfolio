@@ -38,6 +38,40 @@ export function PreviewSection({
   );
 }
 
+// Always bold/capitalized regardless of the template's own section-heading
+// convention (e.g. Minimalist's headings are normally font-normal) — the
+// declaration heading is a fixed exception, not a themed section title. The
+// line only appears when there's a date, so it's a separate element from
+// the heading rather than a shared bottom-border like other sections use.
+export function PreviewDeclarationSection({
+  text,
+  date,
+  color,
+}: {
+  text: string;
+  date: string;
+  color: string;
+}) {
+  return (
+    <div className="mt-[1.4em]">
+      <div className="flex items-baseline gap-[0.6em]">
+        <p className="whitespace-nowrap text-[1.15em] font-bold uppercase" style={{ color }}>
+          Declaration:
+        </p>
+        {date && (
+          <span
+            className="flex-1 max-w-[10em] border-b pb-[0.1em] text-right text-[0.9em] text-neutral-500"
+            style={{ borderColor: color }}
+          >
+            {date}
+          </span>
+        )}
+      </div>
+      <p className="mt-[0.4em] whitespace-pre-line">{text}</p>
+    </div>
+  );
+}
+
 const EDU_COLUMNS: { key: keyof PreviewEducationRow; label: string }[] = [
   { key: "degree", label: "Award" },
   { key: "institute", label: "Institute" },

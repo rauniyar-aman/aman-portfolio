@@ -1,4 +1,5 @@
 import type { CVPreviewModel } from "@/lib/cvPreviewModel";
+import { PreviewDeclarationSection } from "./PreviewPaper";
 
 export default function MinimalistPreview({ vm }: { vm: CVPreviewModel }) {
   const contactLine = [vm.phone, vm.email, vm.address].filter(Boolean).join("   |   ");
@@ -98,6 +99,14 @@ export default function MinimalistPreview({ vm }: { vm: CVPreviewModel }) {
         <LightSection title="Skills" color={vm.themeColor}>
           <p className="whitespace-pre-line">{vm.skills}</p>
         </LightSection>
+      )}
+
+      {vm.includeDeclaration && vm.declarationText && (
+        <PreviewDeclarationSection
+          text={vm.declarationText}
+          date={vm.declarationDate}
+          color={vm.themeColor}
+        />
       )}
     </div>
   );

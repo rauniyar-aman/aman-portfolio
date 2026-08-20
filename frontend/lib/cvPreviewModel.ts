@@ -64,6 +64,9 @@ export interface CVPreviewModel {
   referenceRows: PreviewReferenceRow[];
   languageLines: string[];
   publicationRows: PreviewPublicationRow[];
+  includeDeclaration: boolean;
+  declarationText: string;
+  declarationDate: string;
 }
 
 function cleanLink(raw: string): PreviewLinkItem {
@@ -161,5 +164,8 @@ export function buildCVPreviewModel(content: CVContent): CVPreviewModel {
     referenceRows,
     languageLines,
     publicationRows,
+    includeDeclaration: Boolean(content.include_declaration),
+    declarationText: content.declaration_text || "",
+    declarationDate: content.declaration_date || "",
   };
 }

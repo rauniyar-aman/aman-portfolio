@@ -60,6 +60,9 @@ function parseScanDate(ddMmmYyyy: string): { iso: string; slash: string } {
   return { iso: `${yyyy}-${mm}-${ddPadded}`, slash: `${ddPadded}/${MONTH_ABBR[monthIndex]}/${yyyy}` };
 }
 
+const DEFAULT_DECLARATION_TEXT =
+  "I hereby declare that the details and information given above are complete and true to the best of my knowledge.";
+
 interface CVFormProps {
   mode: "create" | "edit";
   cvId?: number;
@@ -184,6 +187,19 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
 
   function updateField<K extends keyof CVContent>(field: K, value: CVContent[K]) {
     setContent((prev) => ({ ...prev, [field]: value }));
+  }
+
+  // Pre-fills the default declaration text only the first time the box is
+  // ticked for a CV that doesn't have any text yet — an untick never clears
+  // declaration_text, so a later re-tick restores whatever the user wrote
+  // instead of silently overwriting it back to the default.
+  function handleToggleDeclaration(checked: boolean) {
+    setContent((prev) => ({
+      ...prev,
+      include_declaration: checked,
+      declaration_text:
+        checked && !prev.declaration_text.trim() ? DEFAULT_DECLARATION_TEXT : prev.declaration_text,
+    }));
   }
 
   function updatePassport(field: keyof Passport, value: string) {
@@ -1434,6 +1450,39 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
             <p className="text-sm text-muted">No references added yet.</p>
           )}
         </div>
+      </Section>
+
+      <Section title="Declaration">
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            checked={content.include_declaration}
+            onChange={(e) => handleToggleDeclaration(e.target.checked)}
+          />
+          Include declaration statement
+        </label>
+
+        {content.include_declaration && (
+          <div className="mt-4 space-y-4">
+            <Field label="Declaration Text">
+              <textarea
+                value={content.declaration_text}
+                onChange={(e) => updateField("declaration_text", e.target.value)}
+                rows={3}
+                className={`${inputClass} max-w-3xl`}
+              />
+            </Field>
+            <Field label="Date (optional)">
+              <input
+                type="text"
+                value={content.declaration_date}
+                onChange={(e) => updateField("declaration_date", e.target.value)}
+                placeholder="e.g. 20 Aug 2026"
+                className={`${inputClass} max-w-xs`}
+              />
+            </Field>
+          </div>
+        )}
       </Section>
 
       {error && <p className="mb-4 text-sm text-red-700 dark:text-red-400">{error}</p>}

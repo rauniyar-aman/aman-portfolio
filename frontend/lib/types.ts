@@ -165,6 +165,9 @@ export interface CVContent {
   emergency_contact: EmergencyContact; // optional, all fields
   preferred_position: string; // optional
   medical_fitness: string; // optional
+  include_declaration: boolean; // checkbox — declaration only renders anywhere when true
+  declaration_text: string; // pre-filled with a default the first time the box is ticked
+  declaration_date: string; // optional — no line rendered next to the heading if blank
 }
 
 export interface CV {
@@ -247,6 +250,9 @@ export const emptyCVContent = (): CVContent => ({
   emergency_contact: emptyEmergencyContact(),
   preferred_position: "",
   medical_fitness: "",
+  include_declaration: false,
+  declaration_text: "",
+  declaration_date: "",
 });
 
 /**
@@ -341,5 +347,11 @@ export function normalizeCVContent(raw: unknown): CVContent {
     preferred_position:
       typeof data.preferred_position === "string" ? data.preferred_position : base.preferred_position,
     medical_fitness: typeof data.medical_fitness === "string" ? data.medical_fitness : base.medical_fitness,
+    include_declaration:
+      typeof data.include_declaration === "boolean" ? data.include_declaration : base.include_declaration,
+    declaration_text:
+      typeof data.declaration_text === "string" ? data.declaration_text : base.declaration_text,
+    declaration_date:
+      typeof data.declaration_date === "string" ? data.declaration_date : base.declaration_date,
   } as CVContent;
 }
