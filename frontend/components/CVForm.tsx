@@ -415,19 +415,34 @@ export default function CVForm({ mode, cvId, initialTitle, initialContent }: CVF
     }));
   }
 
+  // The passport scanner's scan_image/scan_image_address are full base64
+  // photos (several MB each) held only for the current session's Passport
+  // Preview panel — they must never be persisted as part of CV.content, so
+  // strip them from the outgoing payload without touching the local
+  // `content` state the preview panel still reads from.
+  function buildSavePayloadContent(): CVContent {
+    if (!content.passport) return content;
+    return {
+      ...content,
+      passport: { ...content.passport, scan_image: "", scan_image_address: "" },
+    };
+  }
+
   async function handleSave() {
     setSaving(true);
     setError(null);
 
     try {
+      const payloadContent = buildSavePayloadContent();
+
       if (mode === "create") {
-        const created = await apiPost<CV>("/cvs/", { title, content });
+        const created = await apiPost<CV>("/cvs/", { title, content: payloadContent });
         initialSnapshotRef.current = JSON.stringify({ title, content });
         router.push(`/cv-maker/${created.id}`);
         return;
       }
 
-      await apiPut<CV>(`/cvs/${cvId}/`, { title, content });
+      await apiPut<CV>(`/cvs/${cvId}/`, { title, content: payloadContent });
       initialSnapshotRef.current = JSON.stringify({ title, content });
       // Stay on the editor after saving an existing CV — instead of jumping
       // to the dashboard, this is where Preview/Export live so the user can
